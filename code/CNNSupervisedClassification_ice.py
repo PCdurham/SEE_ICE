@@ -67,13 +67,13 @@ import glob
 """User data input. Fill in the info below before running"""
 #############################################################
 
-ModelName = 'Train22432VGG16_32stride13ims5eps'     #should be the model name from previous run of TrainCNN.py
-TrainPath = 'D:\\CNN_Data\\'  
-PredictPath = 'D:\\S2_Images\\'    #Location of the images
+ModelName = 'Train10035VGG16_10035stride13ims5eps'     #should be the model name from previous run of TrainCNN.py
+TrainPath = 'D:\\SEE_ICE\\'  
+PredictPath = 'D:\\SEE_ICE\\S2_Images\\'    #Location of the images
 IndividualValidTile = 'D:\\S2_Images\\SCLS_S2A1.tif\\'
-ScorePath = 'D:\\S2_Images\\'      #location of the output files and the model
+ScorePath = 'D:\\SEE_ICE\\S2_Images\\Results\\'      #location of the output files and the model
 Experiment = 'Test1CSC'    #ID to append to output performance files
-
+size = 100 #Size of the tiles
 '''BASIC PARAMETER CHOICES'''
 UseSmote = False #Turn SMOTE-ENN resampling on and off
 MLP = True #If false, the phase 2 class will be done with a random forest
@@ -336,7 +336,7 @@ ConvNetmodel = load_model(FullModelPath)
 
 ###############################################################################
 """Classify the holdout images with CNN-Supervised Classification"""
-size = 224 #Do not edit. The base models supplied all assume a tile size of 50.
+
 
 # Getting River Names from the files
 # Glob list fo all jpg images, get unique names form the total list
