@@ -68,10 +68,19 @@ import glob
 #############################################################
 
 ModelName = 'Train10035VGG16_10035stride13ims5eps'     #should be the model name from previous run of TrainCNN.py
+<<<<<<< HEAD
 TrainPath = 'D:\\SEE_ICE\\'  
 PredictPath = 'D:\\SEE_ICE\\S2_Images\\'    #Location of the images
 IndividualValidTile = 'D:\\S2_Images\\SCLS_S2A1.tif\\'
 ScorePath = 'D:\\SEE_ICE\\S2_Images\\Results\\'      #location of the output files and the model
+=======
+size = 224 #size of tiles in the model
+
+TrainPath = 'E:\SEE_ICE\\'  
+PredictPath = 'E:\\SEE_ICE\\S2_Images\\'    #Location of the images
+IndividualValidTile = 'E:\\SEE_ICE\\S2_Images\\\\SCLS_S2A1.tif'
+ScorePath = 'E:\\SEE_ICE\\S2_Images\\Results\\'      #location of the output files and the model
+>>>>>>> 4af6d33b4fcec9ef14ad7cbdb1bf08b860321b5c
 Experiment = 'Test1CSC'    #ID to append to output performance files
 size = 100 #Size of the tiles
 '''BASIC PARAMETER CHOICES'''
@@ -336,7 +345,10 @@ ConvNetmodel = load_model(FullModelPath)
 
 ###############################################################################
 """Classify the holdout images with CNN-Supervised Classification"""
+<<<<<<< HEAD
 
+=======
+>>>>>>> 4af6d33b4fcec9ef14ad7cbdb1bf08b860321b5c
 
 # Getting River Names from the files
 # Glob list fo all jpg images, get unique names form the total list
