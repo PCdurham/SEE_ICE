@@ -45,9 +45,9 @@ SOFTWARE.
 
 ###############################################################################
 """ Libraries"""
-from keras import regularizers
-from keras import optimizers
-from keras.models import load_model
+from tensorflow.keras import regularizers
+from tensorflow.keras import optimizers
+from tensorflow.keras.models import load_model
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
@@ -55,12 +55,12 @@ import matplotlib.patches as mpatches
 from skimage import io
 import skimage.transform as T
 import pandas as pd
-from keras.models import Sequential
-from keras.layers import Dense, Dropout, BatchNormalization,Conv2D, Flatten
-from keras.wrappers.scikit_learn import KerasClassifier
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Dropout, BatchNormalization,Conv2D, Flatten
+from tensorflow.keras.wrappers.scikit_learn import KerasClassifier
 from sklearn.preprocessing import StandardScaler
 from skimage.filters.rank import median, entropy, modal
-from keras.utils import to_categorical
+from tensorflow.keras.utils import to_categorical
 import os.path
 from sklearn import metrics
 from skimage.morphology import disk
@@ -76,7 +76,7 @@ import glob
 """User data input. Fill in the info below before running"""
 #############################################################
 
-ModelName = 'Train22432VGG16_32stride13ims5eps'     #should be the model name from previous run of TrainCNN.py
+ModelName = 'Train10035VGG16_10035stride13ims5eps'     #should be the model name from previous run of TrainCNN.py
 TrainPath = 'D:\\CNN_Data\\'  
 PredictPath = 'D:\\S2_Images\\'   #Location of the images
 ScorePath = 'D:\\S2_Images\\Results\\'      #location of the output files and the model
