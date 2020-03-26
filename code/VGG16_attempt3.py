@@ -13,24 +13,28 @@ VGG16 ATTEMPT 2
 """ INITIAL SET-UP """
 
 import numpy as np
-from keras import layers
-from keras import models
-from keras import optimizers
-from keras import regularizers
-from keras import backend as K
-from keras.models import Sequential
-from keras.layers import Activation
-from keras.layers.core import Dense, Flatten
-from keras.optimizers import Adam
-from keras.metrics import categorical_crossentropy
-from keras.preprocessing.image import ImageDataGenerator
-from keras.layers.normalization import BatchNormalization
-from keras.layers.convolutional import *
+from tensorflow.keras import layers
+from tensorflow.keras import models
+from tensorflow.keras import optimizers
+from tensorflow.keras import regularizers
+from tensorflow.keras import backend as K
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Activation
+from tensorflow.keras.layers import Dense, Flatten
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.metrics import categorical_crossentropy
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.layers import BatchNormalization
+#from tensorflow.keras.layers.convolutional import *
+
+from tensorflow.keras.layers import Conv2D
+
+
 from matplotlib import pyplot as plt
 from sklearn import metrics
 import matplotlib.pyplot as plt
 import itertools
-from keras.applications.vgg16 import VGG16
+from tensorflow.keras.applications.vgg16 import VGG16
 from sklearn.preprocessing import MultiLabelBinarizer
 # =============================================================================
 # =============================================================================
@@ -41,7 +45,7 @@ from sklearn.preprocessing import MultiLabelBinarizer
 train_path = 'D:\CNN_Data\Train10035'
 valid_path = 'D:\CNN_Data\Valid10035'
 test_path = 'D:\CNN_Data\Test10035'
-training_epochs = 5
+training_epochs = 8
 learning_rate = 0.0001
 verbosity = 1
 ModelOutputName = 'VGG16_10035stride13ims'  #where the model will be saved
@@ -105,7 +109,7 @@ def plot_confusion_matrix(cm, classes,
 """Convnet section"""
 ##########################################################
 #Setup the convnet and add dense layers for the big tile model
-conv_base = VGG16(weights='imagenet', include_top = False, input_shape = (224,224,3))
+conv_base = VGG16(weights='imagenet', include_top = False, input_shape = (100,100,3)) #used to be input_shape = (224,224,3)
 conv_base.summary()
 model = models.Sequential()
 model.add(conv_base)
@@ -136,9 +140,9 @@ Optim = optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=
 
 """ SET DATA PATHS """
 
-train_batches = ImageDataGenerator().flow_from_directory(train_path, target_size=(224,224), classes=['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7'], batch_size=5)
-valid_batches = ImageDataGenerator().flow_from_directory(valid_path, target_size=(224,224), classes=['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7'], batch_size=5)
-test_batches = ImageDataGenerator().flow_from_directory(test_path, target_size=(224,224), classes=['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7'], batch_size=5, shuffle=False)
+train_batches = ImageDataGenerator().flow_from_directory(train_path, target_size=(100,100), classes=['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7'], batch_size=5) #all used to be target_size=(224,224)
+valid_batches = ImageDataGenerator().flow_from_directory(valid_path, target_size=(100,100), classes=['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7'], batch_size=5)
+test_batches = ImageDataGenerator().flow_from_directory(test_path, target_size=(100,100), classes=['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7'], batch_size=5, shuffle=False)
 
 # =============================================================================
 
@@ -147,8 +151,8 @@ test_batches = ImageDataGenerator().flow_from_directory(test_path, target_size=(
 model.compile(Adam(lr=learning_rate), loss= 'categorical_crossentropy', metrics=['accuracy'])
 
 #To train the model - fits the model to our batches. Epochs should be number of images in training batches divided by number of batches
-model.fit_generator(train_batches, steps_per_epoch=30838,
-                    validation_data=valid_batches, validation_steps=3536, epochs=training_epochs, verbose=verbosity)
+model.fit_generator(train_batches, steps_per_epoch=29032,
+                    validation_data=valid_batches, validation_steps=4132, epochs=training_epochs, verbose=verbosity)
 
 # =============================================================================
 
@@ -164,7 +168,7 @@ test_labels = test_batches.classes
 
 #plots(test_imgs, titles=test_labels)
 
-predictions = model.predict_generator(test_batches, steps=7056, verbose=0)
+predictions = model.predict_generator(test_batches, steps=8266, verbose=0)
 
 #cm = confusion_matrix(test_labels,np.round(predictions[:,6]))
 #
