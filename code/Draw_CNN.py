@@ -8,27 +8,31 @@ Created on Tue Feb  4 15:25:48 2020
 """ IMPORTS """
 
 import numpy as np
-from keras import layers
-from keras import models
-from keras import optimizers
-from keras import regularizers
-from keras import backend as K
-from keras.models import Sequential
-from keras.layers import Activation
-from keras.layers.core import Dense, Flatten
-from keras.optimizers import Adam
-from keras.metrics import categorical_crossentropy
-from keras.preprocessing.image import ImageDataGenerator
-from keras.layers.normalization import BatchNormalization
-from keras.layers.convolutional import *
+from tensorflow.keras import layers
+from tensorflow.keras import models
+from tensorflow.keras import optimizers
+from tensorflow.keras import regularizers
+from tensorflow.keras import backend as K
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Activation
+from tensorflow.keras.layers import Dense, Flatten
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.metrics import categorical_crossentropy
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.layers import BatchNormalization
+#from tensorflow.keras.layers.convolutional import *
+from tensorflow.keras.layers import Conv2D
+
 from matplotlib import pyplot as plt
 import seaborn as sns
 from sklearn import metrics
 import itertools
-from keras.applications.vgg16 import VGG16
+from tensorflow.keras.applications.vgg16 import VGG16
 from sklearn.preprocessing import MultiLabelBinarizer
 import skimage.io as io
-from keras.models import load_model
+from tensorflow.keras.models import load_model
+import matplotlib.colors as colors
+import matplotlib.patches as mpatches
 
 # =============================================================================
 '''
@@ -38,11 +42,11 @@ This script runs an existing CNN model on a single image and outputs the results
 """ USER INPUT """
 
 train_path = 'D:\\CNN_Data\\'
-ModelName = 'Train22432VGG16_32stride13ims5eps' 
+ModelName = 'Train10035VGG16_10035stride13ims8eps' 
 #Image_name = 'E:\\Masters\\Helheim19\\zb_18_06\\clip\\clip_18_06RGB.tif\\' #put entire path name with tiff of image used to show classification
 Image_name = 'E:\\Masters\\Helheim19\\zb_18_06\\clip\\clip_18_06RGB.tif\\' #put entire path name with tiff of image used to show classification
-size = 224
-stride = 224
+size = 100
+stride = 100
 NormFactor = 255 #Factor to scale the images to roughly 0-1
 
 # =============================================================================
@@ -129,23 +133,38 @@ ConvNetmodel.summary()
 predict = ConvNetmodel.predict(Tiles, verbose=1) #runs model on tiles - the dimension of tiles has to be on the same dimensions i.e. 3 band depth 
 #predict is a label vector - one number per tile 
 class_raster = (class_prediction_to_image(im, predict, size))
-plt.figure()
-plt.imshow(class_raster)
 
 
+        #Display and/or oputput figure results
+
+plt.figure(figsize = (20, 6)) #reduce these values if you have a small screen
+
+Im3D = np.int16(io.imread(Image_name))
+Im3D = np.int16(Im3D *0.0255) #change to maximum value in images - normalised between 0-255
+plt.subplot(1,2,1)
+plt.imshow(Im3D)
+plt.xlabel('Input RGB Image', fontweight='bold')
+
+plt.subplot(1,2,2)
+cmapCHM = colors.ListedColormap(['midnightblue','darkturquoise','paleturquoise','lightgrey','lightcyan','whitesmoke', 'darkgrey'])
+plt.imshow(class_raster, cmap=cmapCHM)
+plt.xlabel('Output VGG16 Classification', fontweight='bold')
 
 
-##Load image
-#Image = io.imread(Image_name)
-#Image = Image[:,:,0:3]
-#for b in range(0,3):
-#    Image[:,:,b] = 255 * Image[:,:,b]/10000#np.max(Im3D[:,:,b].reshape(1,-1)) #normalise the image
-#
-#
-##Image = io.imread(Image_name)
-#cmapCHM = colors.ListedColormap(['black','lightblue','orange','green','yellow','red'])
-#plt.figure(figsize = (12, 9.5))
-#plt.imshow(Image, cmap= cmapCHM)
+class0_box = mpatches.Patch(color='midnightblue', label='Open Water')
+class1_box = mpatches.Patch(color='darkturquoise', label='Ice-berg Water')
+class2_box = mpatches.Patch(color='paleturquoise', label='Melange')
+class3_box = mpatches.Patch(color='lightgrey', label='Glacier Ice')
+class4_box = mpatches.Patch(color='lightcyan', label='Snow on Ice')
+class5_box = mpatches.Patch(color='whitesmoke', label='Snow on Bedrock')
+class6_box = mpatches.Patch(color='darkgrey', label='Bare Bedrock')
+
+ax=plt.gca()
+chartBox = ax.get_position()
+ax.set_position([chartBox.x0, chartBox.y0, chartBox.width, chartBox.height])  #chartBox.width*0.6 changed to just width
+ax.legend(loc='upper center', bbox_to_anchor=(1.13, 0.8), shadow=True, ncol=1, handles=[class0_box, class1_box,class2_box,class3_box,class4_box,class5_box,class6_box])
+
+#ax.legend(loc='upper center', handles=[class0_box, class1_box,class2_box,class3_box,class4_box,class5_box,class6_box])
 
 #
 #observed = test_labels
