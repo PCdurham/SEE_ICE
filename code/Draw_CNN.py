@@ -23,6 +23,10 @@ from tensorflow.keras.layers import BatchNormalization
 #from tensorflow.keras.layers.convolutional import *
 from tensorflow.keras.layers import Conv2D
 
+import skimage.transform as T
+import os.path
+import pandas as pd
+
 from matplotlib import pyplot as plt
 import seaborn as sns
 from sklearn import metrics
@@ -36,19 +40,26 @@ import matplotlib.patches as mpatches
 
 # =============================================================================
 '''
-This script runs an existing CNN model on a single image and outputs the results as a figure
+This script runs an existing CNN model on a single image and outputs the results 
+as a figure showing both the original RGB input, the classified output image, 
+and a classification report. 
 '''
 
 """ USER INPUT """
 
 train_path = 'D:\\CNN_Data\\'
+Output_figure_path = 'D:\\VGG16_outputs\\'
 ModelName = 'Train10035VGG16_10035stride13ims8eps' 
 #Image_name = 'E:\\Masters\\Helheim19\\zb_18_06\\clip\\clip_18_06RGB.tif\\' #put entire path name with tiff of image used to show classification
-Image_name = 'E:\\Masters\\Helheim19\\zk_09_04\\clip\\Clip_09_04RGBN.tif\\' #put entire path name with tiff of image used to show classification
+Image_name = 'E:\\Masters\\Helheim19\\zk_09_04\\clip\\Clip_09_04RGB2.tif\\' #put entire path name with tiff of image used to show classification
+Image_date = '09_04_19'
+Image_validation_raster = 'E:\\Masters\\Helheim19\\zk_09_04\\clip\\Train_09_04RGB.tif\\'
 size = 100
 stride = 100
 NormFactor = 255 #Factor to scale the images to roughly 0-1
 
+
+# =============================================================================
 # =============================================================================
 """ FUNCTIONS """
 
@@ -121,20 +132,43 @@ Tiles = Tiles/NormFactor
 #        Tiles[S,:,:,:] = im[y:y+size,x:x+size,:].reshape(size,size,d) # image tile
 #        S+=1
 # =============================================================================
+#Save classification reports to csv with Pandas
+def classification_report_csv(report, filename):
+    report_data = []
+    lines = report.split('\n')
+    for line in lines[2:-5]:
+        row = {}
+        row_data = line.split(' ') 
+        row_data = list(filter(None, row_data))
+        row['class'] = row_data[0]
+        row['precision'] = float(row_data[1])
+        row['recall'] = float(row_data[2])
+        row['f1_score'] = float(row_data[3])
+        row['support'] = float(row_data[4])
+        report_data.append(row)
+    dataframe = pd.DataFrame.from_dict(report_data)
+    dataframe.to_csv(filename, index = False) 
+
+# =============================================================================
+# =============================================================================
+
         
 """ LOAD CONVNET """
+
 print('Loading ' + ModelName + '.h5')
 FullModelPath = train_path + ModelName + '.h5'
 ConvNetmodel = load_model(FullModelPath)
 ConvNetmodel.summary()
 
+
 """ RUN CNN """
+
 predict = ConvNetmodel.predict(Tiles, verbose=1) #runs model on tiles - the dimension of tiles has to be on the same dimensions i.e. 3 band depth 
 #predict is a label vector - one number per tile 
 class_raster = (class_prediction_to_image(im, predict, size))
 
 
-        #Display and/or oputput figure results
+""" DISPLAY AND/OR OUTPUT FIGURE RESULTS """
 
 plt.figure(figsize = (20, 6)) #reduce these values if you have a small screen
 
@@ -142,13 +176,12 @@ Im3D = np.int16(io.imread(Image_name))
 Im3D = np.int16(Im3D *0.0255) #change to maximum value in images - normalised between 0-255
 plt.subplot(1,2,1)
 plt.imshow(Im3D)
-plt.xlabel('Input RGB Image', fontweight='bold')
+plt.xlabel('Input RGB Image ('+str(Image_date) +')', fontweight='bold')
 
 plt.subplot(1,2,2)
 cmapCHM = colors.ListedColormap(['midnightblue','darkturquoise','paleturquoise','lightgrey','lightcyan','whitesmoke', 'darkgrey'])
 plt.imshow(class_raster, cmap=cmapCHM)
 plt.xlabel('Output VGG16 Classification', fontweight='bold')
-
 
 class0_box = mpatches.Patch(color='midnightblue', label='Open Water')
 class1_box = mpatches.Patch(color='darkturquoise', label='Ice-berg Water')
@@ -163,12 +196,36 @@ chartBox = ax.get_position()
 ax.set_position([chartBox.x0, chartBox.y0, chartBox.width, chartBox.height])  #chartBox.width*0.6 changed to just width
 ax.legend(loc='upper center', bbox_to_anchor=(1.13, 0.8), shadow=True, ncol=1, handles=[class0_box, class1_box,class2_box,class3_box,class4_box,class5_box,class6_box])
 
-#ax.legend(loc='upper center', handles=[class0_box, class1_box,class2_box,class3_box,class4_box,class5_box,class6_box])
 
-#
-#observed = test_labels
+""" SAVE FIGURE TO FOLDER """
+
+print('Saving output figure...')
+FigName = Output_figure_path + Image_date + ModelName + '.png'
+plt.savefig(FigName)
+
+
+""" PRODUCE AND SAVE CLASSIFICATION REPORT """
+
+Class = io.imread(Image_validation_raster) #Raster of validation classes
+if (Class.shape[0] != im.shape[0]) or (Class.shape[1] != im.shape[1]): #Reshapes rasters so they are the same
+    print('WARNING: inconsistent image and class mask sizes')
+    Class = T.resize(Class, (im.shape[0], im.shape[1]), preserve_range = True) #bug handling for vector
+
+Class = Class.reshape(-1,1)  #vectorised validation raster
+PredictedClassVECT = class_raster.reshape(-1,1) # This is the CNN tiles prediction
+PredictedClassVECT = PredictedClassVECT[Class != 0] #Removes areas with no validation class data from the predicted class vector 
+Class = Class[Class != 0] #Removes areas with no class data from validation data 
+Class = np.int32(Class)
+PredictedClassVECT = np.int16(PredictedClassVECT) # both changed to int16
+reportCNN = metrics.classification_report(Class, PredictedClassVECT, digits = 3)
+print(reportCNN)
+
+#saves classification report to results folder as a csv. file 
+CNNname = Output_figure_path + 'CNN_Report_'+ str(Image_date)+ '.csv'   
+classification_report_csv(reportCNN, CNNname)
+
+# =============================================================================
+# =============================================================================
+
+
 #predicted = np.argmax(predict, axis=1) #+1 to make the classes
-#report = metrics.classification_report(observed, predicted, digits=3)
-#print('VGG16 results')
-#print('\n')
-#print(report)
