@@ -230,4 +230,3 @@ classification_report_csv(reportCNN, CNNname)
 
 
 #predicted = np.argmax(predict, axis=1) #+1 to make the classes
-predicted = np.argmax(predict, axis=1) #+1 to make the classes
