@@ -180,22 +180,22 @@ plt.imshow(Im3D)
 plt.xlabel('Input RGB Image ('+str(Image_date) +')', fontweight='bold')
 
 plt.subplot(1,2,2)
-cmapCHM = colors.ListedColormap(['midnightblue','darkturquoise','paleturquoise','lightgrey','lightcyan','whitesmoke', 'darkgrey'])
+cmapCHM = colors.ListedColormap(['orange','gold','mediumturquoise','teal','darkslategrey','lightgrey', 'darkgrey'])
 plt.imshow(class_raster, cmap=cmapCHM)
 plt.xlabel('Output VGG16 Classification', fontweight='bold')
 
-class0_box = mpatches.Patch(color='midnightblue', label='Open Water')
-class1_box = mpatches.Patch(color='darkturquoise', label='Ice-berg Water')
-class2_box = mpatches.Patch(color='paleturquoise', label='Melange')
-class3_box = mpatches.Patch(color='lightgrey', label='Glacier Ice')
-class4_box = mpatches.Patch(color='lightcyan', label='Snow on Ice')
-class5_box = mpatches.Patch(color='whitesmoke', label='Snow on Bedrock')
-class6_box = mpatches.Patch(color='darkgrey', label='Bare Bedrock')
+class0_box = mpatches.Patch(color='darkgrey', label='Bedrock')
+class1_box = mpatches.Patch(color='lightgrey', label='Snow on Rock')
+class2_box = mpatches.Patch(color='darkslategrey', label='Snow on Ice')
+class3_box = mpatches.Patch(color='mediumturquoise', label='Melange')
+class4_box = mpatches.Patch(color='gold', label='Ice-berg Water')
+class5_box = mpatches.Patch(color='orange', label='Open Water')
+class6_box = mpatches.Patch(color='teal', label='Glacier Ice')
 
 ax=plt.gca()
 chartBox = ax.get_position()
 ax.set_position([chartBox.x0, chartBox.y0, chartBox.width, chartBox.height])  #chartBox.width*0.6 changed to just width
-ax.legend(loc='upper center', bbox_to_anchor=(1.13, 0.8), shadow=True, ncol=1, handles=[class0_box, class1_box,class2_box,class3_box,class4_box,class5_box,class6_box])
+ax.legend(loc='upper center', bbox_to_anchor=(1.13, 0.8), shadow=True, ncol=1, handles=[class0_box, class1_box,class2_box,class6_box,class3_box,class4_box,class5_box])
 
 
 """ SAVE FIGURE TO FOLDER """
