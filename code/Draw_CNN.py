@@ -51,9 +51,9 @@ train_path = 'D:\\CNN_Data\\'
 Output_figure_path = 'D:\\VGG16_outputs\\'
 ModelName = 'Train10035VGG16_10035stride13ims8eps' 
 #Image_name = 'E:\\Masters\\Helheim19\\zb_18_06\\clip\\clip_18_06RGB.tif\\' #put entire path name with tiff of image used to show classification
-Image_name = 'E:\\Masters\\Helheim19\\zk_09_04\\clip\\Clip_09_04RGB2.tif\\' #put entire path name with tiff of image used to show classification
-Image_date = '09_04_19'
-Image_validation_raster = 'E:\\Masters\\Helheim19\\zk_09_04\\clip\\Train_09_04RGB.tif\\'
+Image_name = 'E:\\Masters\\Helheim19\\zb_18_06\\clip\\clip_18_06RGB.tif\\' #put entire path name with tiff of image used to show classification
+Image_date = '18_06_19'
+Image_validation_raster = 'E:\\Masters\\Helheim19\\zb_18_06\\clip\\Train_18_06RGB.tif\\'
 size = 100
 stride = 100
 NormFactor = 255 #Factor to scale the images to roughly 0-1
@@ -84,10 +84,11 @@ def class_prediction_to_image(im, predictions, size):
             y1 = np.int32(y * size)
             x2 = np.int32(x1 + size)
             y2 = np.int32(y1 + size)
-            TileImage[y1:y2,x1:x2] = np.argmax(predictions[B,:])
+            TileImage[y1:y2,x1:x2] = np.argmax(predictions[B,:])+1
             B+=1
 
     return TileImage
+
 # =============================================================================
 # Helper function to crop images to have an integer number of tiles. No padding is used.
 def CropToTile (Im, size):
@@ -229,3 +230,4 @@ classification_report_csv(reportCNN, CNNname)
 
 
 #predicted = np.argmax(predict, axis=1) #+1 to make the classes
+predicted = np.argmax(predict, axis=1) #+1 to make the classes
