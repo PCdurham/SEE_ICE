@@ -175,7 +175,7 @@ plt.figure(figsize = (20, 6)) #reduce these values if you have a small screen
 Im3D = np.int16(io.imread(Image_name))
 Im3D = np.int16(Im3D *0.0255) #change to maximum value in images - normalised between 0-255
 plt.subplot(1,2,1)
-plt.imshow(Im3D)
+plt.imshow(Im3D[:,:,0:3])
 plt.xlabel('Input RGB Image ('+str(Image_date) +')', fontweight='bold')
 
 plt.subplot(1,2,2)
