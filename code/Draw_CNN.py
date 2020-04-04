@@ -48,14 +48,14 @@ and a classification report.
 """ USER INPUT """
 
 train_path = 'D:\\CNN_Data\\'
-Output_figure_path = 'D:\\VGG16_outputs\\'
-ModelName = 'Train10035VGG16_10035stride13ims8eps' 
-#Image_name = 'E:\\Masters\\Helheim19\\zb_18_06\\clip\\clip_18_06RGB.tif\\' #put entire path name with tiff of image used to show classification
-Image_name = 'E:\\Masters\\Helheim19\\zb_18_06\\clip\\clip_18_06RGB.tif\\' #put entire path name with tiff of image used to show classification
-Image_date = '18_06_19'
-Image_validation_raster = 'E:\\Masters\\Helheim19\\zb_18_06\\clip\\Train_18_06RGB.tif\\'
-size = 100
-stride = 100
+Output_figure_path = 'D:\\VGG16_outputs224\\'
+ModelName = 'Train22432VGG16_22432stride13ims8eps' 
+Image_name = 'E:\\Masters\\Helheim19\\zh_26_05\\clip\\clip_26_05RGB.tif\\' #put entire path name with tiff of image used to show classification
+#example Image_name = 'E:\\Masters\\Helheim19\\zb_18_06\\clip\\clip_18_06RGB.tif\\' #put entire path name with tiff of image used to show classification
+Image_date = '26_05_19'
+Image_validation_raster = 'E:\\Masters\\Helheim19\\zh_26_05\\clip\\Train_26_05RGB.tif\\'
+size = 224
+stride = 224
 NormFactor = 255 #Factor to scale the images to roughly 0-1
 
 
@@ -99,6 +99,25 @@ def CropToTile (Im, size):
     crop_dim1 = size * (Im.shape[1]//size)
     return Im[0:crop_dim0, 0:crop_dim1, :]
 
+# =============================================================================
+#Save classification reports to csv with Pandas
+def classification_report_csv(report, filename):
+    report_data = []
+    lines = report.split('\n')
+    for line in lines[2:-5]:
+        row = {}
+        row_data = line.split(' ') 
+        row_data = list(filter(None, row_data))
+        row['class'] = row_data[0]
+        row['precision'] = float(row_data[1])
+        row['recall'] = float(row_data[2])
+        row['f1_score'] = float(row_data[3])
+        row['support'] = float(row_data[4])
+        report_data.append(row)
+    dataframe = pd.DataFrame.from_dict(report_data)
+    dataframe.to_csv(filename, index = False) 
+# =============================================================================
+# =============================================================================
 
 # =============================================================================
 # Makes a bucket of zeros in the shape of a tensor and then puts each tile into its own slot in the tensor
@@ -132,26 +151,6 @@ Tiles = Tiles/NormFactor
 #    for x in range(0, w-size, stride): #for each tile in the image 
 #        Tiles[S,:,:,:] = im[y:y+size,x:x+size,:].reshape(size,size,d) # image tile
 #        S+=1
-# =============================================================================
-#Save classification reports to csv with Pandas
-def classification_report_csv(report, filename):
-    report_data = []
-    lines = report.split('\n')
-    for line in lines[2:-5]:
-        row = {}
-        row_data = line.split(' ') 
-        row_data = list(filter(None, row_data))
-        row['class'] = row_data[0]
-        row['precision'] = float(row_data[1])
-        row['recall'] = float(row_data[2])
-        row['f1_score'] = float(row_data[3])
-        row['support'] = float(row_data[4])
-        report_data.append(row)
-    dataframe = pd.DataFrame.from_dict(report_data)
-    dataframe.to_csv(filename, index = False) 
-
-# =============================================================================
-# =============================================================================
 
         
 """ LOAD CONVNET """
