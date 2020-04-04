@@ -39,9 +39,9 @@ SOFTWARE.
 
 ###############################################################################
 """ Libraries"""
-from keras import regularizers
-from keras import optimizers
-from keras.models import load_model
+from tensorflow.keras import regularizers
+from tensorflow.keras import optimizers
+from tensorflow.keras.models import load_model
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
@@ -49,9 +49,9 @@ import matplotlib.patches as mpatches
 from skimage import io
 import skimage.transform as T
 import pandas as pd
-from keras.models import Sequential
-from keras.layers import Dense, Dropout, BatchNormalization
-from keras.wrappers.scikit_learn import KerasClassifier
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Dropout, BatchNormalization
+from tensorflow.keras.wrappers.scikit_learn import KerasClassifier
 from sklearn.preprocessing import StandardScaler
 from skimage.filters.rank import median, entropy, modal
 import os.path
@@ -67,22 +67,25 @@ import glob
 """User data input. Fill in the info below before running"""
 #############################################################
 
-ModelName = 'Train10035VGG16_10035stride13ims5eps'     #should be the model name from previous run of TrainCNN.py
-<<<<<<< HEAD
-TrainPath = 'D:\\SEE_ICE\\'  
-PredictPath = 'D:\\SEE_ICE\\S2_Images\\'    #Location of the images
+ModelName = 'Train10035VGG16_10035stride13ims8eps'     #should be the model name from previous run of TrainCNN.py
+#<<<<<<< HEAD
+TrainPath = 'D:\\CNN_Data\\'  
+PredictPath = 'D:\\S2_Images\\'    #Location of the images
 IndividualValidTile = 'D:\\S2_Images\\SCLS_S2A1.tif\\'
-ScorePath = 'D:\\SEE_ICE\\S2_Images\\Results\\'      #location of the output files and the model
-=======
-size = 224 #size of tiles in the model
+ScorePath = 'D:\\S2_Images\\Results\\'      #location of the output files and the model
+#=======
+#size = 100 #size of tiles in the model
 
-TrainPath = 'E:\SEE_ICE\\'  
-PredictPath = 'E:\\SEE_ICE\\S2_Images\\'    #Location of the images
-IndividualValidTile = 'E:\\SEE_ICE\\S2_Images\\\\SCLS_S2A1.tif'
-ScorePath = 'E:\\SEE_ICE\\S2_Images\\Results\\'      #location of the output files and the model
->>>>>>> 4af6d33b4fcec9ef14ad7cbdb1bf08b860321b5c
+#TrainPath = 'E:\SEE_ICE\\'  
+#PredictPath = 'E:\\SEE_ICE\\S2_Images\\'    #Location of the images
+#IndividualValidTile = 'E:\\SEE_ICE\\S2_Images\\\\SCLS_S2A1.tif'
+#ScorePath = 'E:\\SEE_ICE\\S2_Images\\Results\\'      #location of the output files and the model
+#>>>>>>> 4af6d33b4fcec9ef14ad7cbdb1bf08b860321b5c
 Experiment = 'Test1CSC'    #ID to append to output performance files
 size = 100 #Size of the tiles
+
+
+
 '''BASIC PARAMETER CHOICES'''
 UseSmote = False #Turn SMOTE-ENN resampling on and off
 MLP = True #If false, the phase 2 class will be done with a random forest
@@ -162,7 +165,7 @@ def split_image_to_tiles(im, size):
             y1 = np.int32(y * size)
             x2 = np.int32(x1 + size)
             y2 = np.int32(y1 + size)
-            TileTensor[B,:,:,:] = im[y1:y2,x1:x2].reshape(size,size,d)
+            TileTensor[B,:,:,:] = im[y1:y2,x1:x2].reshape(size,size,d)+1
             B+=1
 
     return TileTensor
@@ -198,6 +201,7 @@ def class_prediction_to_image(im, PredictedTiles, size):
     if len(im.shape) ==2:
         h, w = im.shape
         d = 1
+        im=im[:,:,0] #added this in because it's in draw_CNN
     else:
         h, w, d = im.shape
 
@@ -205,7 +209,7 @@ def class_prediction_to_image(im, PredictedTiles, size):
     nTiles_height = h//size
     nTiles_width = w//size
     #TileTensor = np.zeros((nTiles_height*nTiles_width, size,size,d))
-    TileImage = np.zeros(im.shape)
+    TileImage = np.zeros((h,w))
     B=0
     for y in range(0, nTiles_height):
         for x in range(0, nTiles_width):
@@ -214,7 +218,7 @@ def class_prediction_to_image(im, PredictedTiles, size):
             x2 = np.int32(x1 + size)
             y2 = np.int32(y1 + size)
             #TileTensor[B,:,:,:] = im[y1:y2,x1:x2].reshape(size,size,d)
-            TileImage[y1:y2,x1:x2] = np.argmax(PredictedTiles[B,:])
+            TileImage[y1:y2,x1:x2] = np.argmax(PredictedTiles[B,:])+1
             B+=1
 
     return TileImage
@@ -341,18 +345,20 @@ else:
 print('Loading ' + ModelName + '.h5')
 FullModelPath = TrainPath + ModelName + '.h5'
 ConvNetmodel = load_model(FullModelPath)
+ConvNetmodel.summary()
 
 
 ###############################################################################
 """Classify the holdout images with CNN-Supervised Classification"""
-<<<<<<< HEAD
-
-=======
->>>>>>> 4af6d33b4fcec9ef14ad7cbdb1bf08b860321b5c
+#<<<<<<< HEAD
+#
+#=======
+#>>>>>>> 4af6d33b4fcec9ef14ad7cbdb1bf08b860321b5c
 
 # Getting River Names from the files
 # Glob list fo all jpg images, get unique names form the total list
-img = glob.glob(PredictPath+"S2A*.tif")
+img = glob.glob(PredictPath+"S2A*.tif") #collects image tiles
+
 TestRiverTuple = []
 for im in img:
     TestRiverTuple.append(os.path.basename(im).partition('_')[0])
@@ -386,6 +392,7 @@ for f,riv in enumerate(TestRiverTuple):
         #print(isinstance(Im3D,uint8))
         if len(Im3D) == 2:
             Im3D = Im3D[0]
+            
         Class = io.imread(class_img[i])
         if (Class.shape[0] != Im3D.shape[0]) or (Class.shape[1] != Im3D.shape[1]):
             print('WARNING: inconsistent image and class mask sizes for ' + im)
@@ -393,16 +400,34 @@ for f,riv in enumerate(TestRiverTuple):
         ClassIm = copy.deepcopy(Class)
         #Tile the images to run the convnet
         
-        ImCrop = CropToTile (Im3D[:,:,0:3], size)
+        ImCrop = CropToTile(Im3D[:,:,0:3], size)
+        
         I_tiles = split_image_to_tiles(ImCrop, size)
-        I_tiles = np.int16(I_tiles *0.0255)#change to maximum value in images - normalised
+#        I_tiles = np.int16(I_tiles *0.0255)#change to maximum value in images - normalised
+        I_tiles = np.int16(I_tiles)
+        
+#        I_tilesTest = I_tiles[0,:,:,:]
+#        plt.figure(figsize = (12, 9.5)) #reduce these values if you have a small screen
+#        plt.subplot(2,2,1)
+#        plt.imshow(I_tiles[0,:,:,:])
+#        plt.subplot(2,2,2)
+#        plt.imshow(I_tiles[1,:,:,:])
+#        plt.subplot(2,2,3)
+#        plt.imshow(I_tiles[2,:,:,:])
+#        plt.subplot(2,2,4)
+#        plt.imshow(I_tiles[3,:,:,:])
+        
         #Apply the convnet
         print('Detecting CNN-supervised training areas')
-        PredictedTiles = ConvNetmodel.predict(I_tiles, batch_size = 32, verbose = Chatty)
+        PredictedTiles = ConvNetmodel.predict(I_tiles, batch_size = 32, verbose = Chatty) #batch size was originally 32
         #Convert the convnet one-hot predictions to a new class label image
         PredictedTiles[PredictedTiles < RecogThresh] = 0
         PredictedClass = class_prediction_to_image(Class, PredictedTiles, size) #copy this function
         #Set classes to 0 if they do not have MinTiles detected by the CNN
+        
+##############################################################################
+###############################################################################        
+        
         
         #for c in range(0,NClasses+1):
         #    count = np.sum(PredictedClass.reshape(-1,1) == c)
@@ -510,8 +535,9 @@ for f,riv in enumerate(TestRiverTuple):
         plt.imshow(Im3D[:,:,0:3])
         plt.title('Classification results for ' + os.path.basename(im), fontweight='bold')
         plt.xlabel('Input RGB Image', fontweight='bold')
+        
         plt.subplot(2,2,2)
-        cmapCHM = colors.ListedColormap(['black','lightblue','orange','green','yellow','red'])
+        cmapCHM = colors.ListedColormap(['black','lightblue','orange','green','yellow','red','gold','grey'])
         plt.imshow(np.squeeze(ClassIm), cmap=cmapCHM)
         plt.xlabel('Validation Labels', fontweight='bold')
         class0_box = mpatches.Patch(color='black', label='Unclassified')
@@ -520,13 +546,17 @@ for f,riv in enumerate(TestRiverTuple):
         class3_box = mpatches.Patch(color='green', label='Green Veg.')
         class4_box = mpatches.Patch(color='yellow', label='Senesc. Veg.')
         class5_box = mpatches.Patch(color='red', label='Paved Road')
+        class6_box = mpatches.Patch(color='gold', label='Paved Road')
+        class7_box = mpatches.Patch(color='grey', label='Paved Road')
+
         ax=plt.gca()
-        ax.legend(handles=[class0_box, class1_box,class2_box,class3_box,class4_box,class5_box])
+        ax.legend(handles=[class0_box, class1_box,class2_box,class3_box,class4_box,class5_box,class6_box,class7_box])
         plt.subplot(2,2,3)
         plt.imshow(np.squeeze(PredictedClass), cmap=cmapCHM)
         plt.xlabel('CNN tiles Classification. F1: ' + GetF1(reportCNN), fontweight='bold')
+       
         plt.subplot(2,2,4)
-        cmapCHM = colors.ListedColormap(['black', 'lightblue','orange','green','yellow','red'])
+        cmapCHM = colors.ListedColormap(['black', 'lightblue','orange','green','yellow','red','gold','grey'])
         plt.imshow(PredictedImage, cmap=cmapCHM)
         
         plt.xlabel('CNN-Supervised Classification. F1: ' + GetF1(reportSSC), fontweight='bold' )
