@@ -85,7 +85,7 @@ for y in range(0, h,size): #from first pixel to last pixel where 224 will fit, i
     for x in range(0, w,size):
         LabelTile = CroppedClassRaster[y:y+size,x:x+size] #Cropped class raster to tile size
         Tile = im[y:y+size,x:x+size,:].reshape(size,size,d) # image tile
-        Tile = np.uint8(255*Tile/16384)
+        Tile = np.uint8(255*Tile/16525) # used to be 16384 but replaced with max of image used.
         save_tile(Tile, CurrentTile, DataFolder, RootName) #Save the tile to disk
         save_tile(LabelTile, CurrentTile, DataFolder, 'SCLS_'+RootName) #Save the tile to disk
         CurrentTile+=1 #saves rotated tile and does not overwrite previously saved files
