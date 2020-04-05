@@ -19,13 +19,13 @@ import sys
 
 """User Input"""
 
-ImName = 'clip_26_10RGBN.tif' #name of image to be tiled
-ClassName = 'Train_26_10RGB.tif' #name of class raster used to assign classes to tiles
-ImFolder = 'E:\\Masters\\Helheim19\\aa_26_10\\clip\\' #location of image to be tiled
+ImName = 'clip_08_02RGBN.tif' #name of image to be tiled
+ClassName = 'Train_08_02RGB.tif' #name of class raster used to assign classes to tiles
+ImFolder = 'E:\\Masters\\Helheim19\\zr_08_02\\clip\\' #location of image to be tiled
 DataFolder = 'D:\\CNN_Data\\' #folder location for output tiles
-size = 100 #size (in pixels) of output tiles
-stride =35 #number of pixels the tiler slides before extracting another tile
-LastTile =0 #last tile number from previous image
+size = 224 #size (in pixels) of output tiles
+stride =32 #number of pixels the tiler slides before extracting another tile
+LastTile =109200 #last tile number from previous image
 
 # =============================================================================
 ###############################################################################
