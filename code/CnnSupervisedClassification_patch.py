@@ -76,10 +76,10 @@ import glob
 """User data input. Fill in the info below before running"""
 #############################################################
 
-ModelName = 'Train10035VGG16_10035stride13ims5eps'     #should be the model name from previous run of TrainCNN.py
+ModelName = 'Train10035VGG16_10035stride13ims8eps'     #should be the model name from previous run of TrainCNN.py
 TrainPath = 'D:\\CNN_Data\\'  
 PredictPath = 'D:\\S2_Images\\'   #Location of the images
-ScorePath = 'D:\\S2_Images\\Results\\'      #location of the output files and the model
+ScorePath = 'D:\\S2_Images\\ResultsPatch\\'      #location of the output files and the model
 Experiment = 'PatchTest1'    #ID to append to output performance files
 
 '''BASIC PARAMETER CHOICES'''
@@ -160,7 +160,7 @@ def split_image_to_tiles(im, size):
             y1 = np.int32(y * size)
             x2 = np.int32(x1 + size)
             y2 = np.int32(y1 + size)
-            TileTensor[B,:,:,:] = im[y1:y2,x1:x2].reshape(size,size,d)
+            TileTensor[B,:,:,:] = im[y1:y2,x1:x2].reshape(size,size,d)+1
             B+=1
 
     return TileTensor
@@ -341,7 +341,7 @@ ConvNetmodel = load_model(FullModelPath)
 ###############################################################################
 """Classify the holdout images with CNN-Supervised Classification"""
 #size = 50 #Do not edit. The base models supplied all assume a tile size of 50.
-size = 224 #Do not edit. The base models supplied all assume a tile size of 50.
+size = 100 #Do not edit. The base models supplied all assume a tile size of 50. #224
 
 # Getting River Names from the files
 # Glob list fo all jpg images, get unique names form the total list
@@ -377,7 +377,8 @@ for f,riv in enumerate(TestRiverTuple):
         ImCrop = CropToTile (Im3D[:,:,0:3], size)
 #        ImCrop = CropToTile (Im3D, size)
         I_tiles = split_image_to_tiles(ImCrop, size)
-        I_tiles = np.int16(I_tiles *0.0255)#change to maximum value in images - normalised
+#        I_tiles = np.int16(I_tiles *0.0255)#change to maximum value in images - normalised
+        I_tiles = np.int16(I_tiles)
 
 #        I_tiles = np.int16(I_tiles) / 255
         #Apply the convnet
