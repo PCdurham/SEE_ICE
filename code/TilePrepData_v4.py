@@ -19,9 +19,9 @@ import sys
 
 """User Input"""
 
-ImName = 'Sc01_08_19RGBN.tif' #name of image to be tiled
-ClassName = 'Sc01_08_19V2.tif' #name of class raster used to assign classes to tiles
-ImFolder = 'E:\\Masters\\ScoresbySund19\\Sc01_08_19\\' #location of image to be tiled
+ImName = 'H13_09_19RGBN.tif' #name of image to be tiled
+ClassName = 'H13_09_19V.tif' #name of class raster used to assign classes to tiles
+ImFolder = 'E:\\Masters\\Helheim19\\g_13_09\\' #location of image to be tiled
 DataFolder = 'D:\\S2_Images\\' #folder location for output tiles
 RootName = 'S2A'
 
@@ -85,7 +85,7 @@ for y in range(0, h,size): #from first pixel to last pixel where 224 will fit, i
     for x in range(0, w,size):
         LabelTile = CroppedClassRaster[y:y+size,x:x+size] #Cropped class raster to tile size
         Tile = im[y:y+size,x:x+size,:].reshape(size,size,d) # image tile
-        Tile = np.uint8(255*Tile/16525) # used to be 16384 but replaced with max of image used.
+        Tile = np.uint8(255*Tile/16384) # used to be 16384 but replaced with max of image used.
         save_tile(Tile, CurrentTile, DataFolder, RootName) #Save the tile to disk
         save_tile(LabelTile, CurrentTile, DataFolder, 'SCLS_'+RootName) #Save the tile to disk
         CurrentTile+=1 #saves rotated tile and does not overwrite previously saved files
