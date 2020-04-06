@@ -320,7 +320,6 @@ model.compile(loss='categorical_crossentropy', optimizer=Optim, metrics = ['accu
 
 
 
-
 #EstimatorNN = KerasClassifier(build_fn=patchCNN_model_L2D, epochs=TrainingEpochs, batch_size=50000, verbose=Chatty)
     
 
@@ -388,10 +387,12 @@ for f,riv in enumerate(TestRiverTuple):
         PredictedTiles[PredictedTiles < RecogThresh] = 0
         PredictedClass = class_prediction_to_image(Class, PredictedTiles, size)
 #        PredictedClass = SimplifyClass(PredictedClass, ClassKey)
-        			
+        
+        
+  ##################################################################################################      			
         #Prep the pixel data into a tensor of patches
-        I_Stride1Tiles, Labels = slide_rasters_to_tiles(Im3D, PredictedClass, 5)
-        I_Stride1Tiles = np.int16(I_Stride1Tiles) / 255
+        I_Stride1Tiles, Labels = slide_rasters_to_tiles(Im3D, PredictedClass, 5) 
+        I_Stride1Tiles = np.int16(I_Stride1Tiles) #/ 255
         Labels1Hot = to_categorical(Labels, num_classes=NClasses)
      
 
@@ -452,15 +453,20 @@ for f,riv in enumerate(TestRiverTuple):
         plt.title('Classification results for ' + os.path.basename(im), fontweight='bold')
         plt.xlabel('Input RGB Image', fontweight='bold')
         plt.subplot(2,2,2)
-        cmapCHM = colors.ListedColormap(['black','lightblue','orange','green','yellow','red'])
+        cmapCHM = colors.ListedColormap(['black','orange','gold','mediumturquoise','teal','darkslategrey','lightgrey', 'darkgrey'])
         plt.imshow(np.squeeze(ClassIm), cmap=cmapCHM)
         plt.xlabel('Validation Labels', fontweight='bold')
+        
+
         class0_box = mpatches.Patch(color='black', label='Unclassified')
-        class1_box = mpatches.Patch(color='lightblue', label='Water')
-        class2_box = mpatches.Patch(color='orange', label='Sediment')
-        class3_box = mpatches.Patch(color='green', label='Green Veg.')
-        class4_box = mpatches.Patch(color='yellow', label='Senesc. Veg.')
-        class5_box = mpatches.Patch(color='red', label='Paved Road')
+        class1_box = mpatches.Patch(color='darkgrey', label='Bedrock')
+        class2_box = mpatches.Patch(color='lightgrey', label='Snow on Rock')
+        class3_box = mpatches.Patch(color='darkslategrey', label='Snow on Ice')
+        class4_box = mpatches.Patch(color='mediumturquoise', label='Melange')
+        class5_box = mpatches.Patch(color='gold', label='Ice-berg Water')
+        class6_box = mpatches.Patch(color='orange', label='Open Water')
+        class7_box = mpatches.Patch(color='teal', label='Glacier Ice')
+        
         ax=plt.gca()
         ax.legend(handles=[class0_box, class1_box,class2_box,class3_box,class4_box,class5_box])
         plt.subplot(2,2,3)
