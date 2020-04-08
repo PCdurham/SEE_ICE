@@ -107,7 +107,9 @@ LearningRate = 0.001
 Chatty = 1 # set the verbosity of the model training.  Use 1 at first, 0 when confident that model is well tuned
 MinSample = 250000 #minimum sample size per class before warning
 
-
+Filters = 16
+Kernel_size = 5
+Input_shape = (5,5,4)
 
 
 
@@ -160,7 +162,7 @@ def split_image_to_tiles(im, size):
             y1 = np.int32(y * size)
             x2 = np.int32(x1 + size)
             y2 = np.int32(y1 + size)
-            TileTensor[B,:,:,:] = im[y1:y2,x1:x2].reshape(size,size,d)+1
+            TileTensor[B,:,:,:] = im[y1:y2,x1:x2].reshape(size,size,d)
             B+=1
 
     return TileTensor
@@ -180,7 +182,7 @@ def slide_rasters_to_tiles(im, CLS, size):
     B=0
     for y in range(0, h-size):
         for x in range(0, w-size):
-            Label[B] = np.median(CLS[y:y+size,x:x+size].reshape(1,-1))
+            Label[B] = np.median(CLS[y:y+size,x:x+size].reshape(1,-1))+1 #added +1
 
             TileTensor[B,:,:,:] = im[y:y+size,x:x+size,:].reshape(size,size,d)
             B+=1
@@ -234,7 +236,7 @@ def class_prediction_to_image(im, PredictedTiles, size):#size is size of tiny pa
             x2 = np.int32(x1 + size)
             y2 = np.int32(y1 + size)
             #TileTensor[B,:,:,:] = im[y1:y2,x1:x2].reshape(size,size,d)
-            TileImage[y1:y2,x1:x2] = np.argmax(PredictedTiles[B,:])
+            TileImage[y1:y2,x1:x2] = np.argmax(PredictedTiles[B,:])+1
             B+=1
 
     return TileImage
@@ -295,13 +297,11 @@ def GetF1(report):
 """Instantiate the CNN patch pixel-based classifier""" 
    
 
-
-
 # define the patch CNN model with L2 regularization and dropout
 
 	# create model
 model = Sequential()
-model.add(Conv2D(16,5, data_format='channels_last', input_shape=(5,5,4)))
+model.add(Conv2D(Filters,Kernel_size, data_format='channels_last', input_shape=Input_shape)) #model.add(Conv2D(16,5, data_format='channels_last', input_shape=(5,5,4)))
 model.add(Flatten())
 model.add(Dense(128, kernel_regularizer= regularizers.l2(0.001), kernel_initializer='normal', activation='relu'))
 model.add(Dense(128, kernel_regularizer= regularizers.l2(0.001), kernel_initializer='normal', activation='relu'))
@@ -309,7 +309,7 @@ model.add(Dropout(0.5))
 model.add(Dense(32, kernel_regularizer= regularizers.l2(0.001), kernel_initializer='normal', activation='relu'))
 model.add(Dense(32, kernel_regularizer= regularizers.l2(0.001), kernel_initializer='normal', activation='relu'))
 
-model.add(Dense(NClasses, kernel_initializer='normal', activation='softmax'))
+model.add(Dense(NClasses, kernel_initializer='normal', activation='softmax')) 
 
 #Tune an optimiser
 Optim = optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=True)
@@ -318,7 +318,7 @@ Optim = optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=
 model.compile(loss='categorical_crossentropy', optimizer=Optim, metrics = ['accuracy'])
 
 
-
+model.summary()
 
 #EstimatorNN = KerasClassifier(build_fn=patchCNN_model_L2D, epochs=TrainingEpochs, batch_size=50000, verbose=Chatty)
     
@@ -404,7 +404,7 @@ for f,riv in enumerate(TestRiverTuple):
             
         #Fit the predictor to all patches
         Predicted = model.predict(x=I_Stride1Tiles, batch_size=50000, verbose=Chatty)
-        Predicted = np.argmax(Predicted, axis=1)
+        Predicted = np.argmax(Predicted, axis=1)+1
         
         #Reshape the predictions to image format and display
         PredictedImage = Predicted.reshape(Im3D.shape[0]-5, Im3D.shape[1]-5)
@@ -473,7 +473,7 @@ for f,riv in enumerate(TestRiverTuple):
         plt.imshow(np.squeeze(PredictedClass), cmap=cmapCHM)
         plt.xlabel('CNN tiles Classification. F1: ' + GetF1(reportCNN), fontweight='bold')
         plt.subplot(2,2,4)
-        cmapCHM = colors.ListedColormap(['black', 'lightblue','orange','green','yellow','red'])
+        cmapCHM = colors.ListedColormap(['black','orange','gold','mediumturquoise','teal','darkslategrey','lightgrey', 'darkgrey'])
         plt.imshow(PredictedImage, cmap=cmapCHM)
         
         plt.xlabel('CNN-Supervised Classification. F1: ' + GetF1(reportSSC), fontweight='bold' )
