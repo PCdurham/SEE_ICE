@@ -108,9 +108,9 @@ Chatty = 1 # set the verbosity of the model training.  Use 1 at first, 0 when co
 MinSample = 250000 #minimum sample size per class before warning
 
 Filters = 16
-Kernel_size = 5
+Kernel_size = 5 
 Input_shape = (5,5,4)
-
+#can change but has to be an odd number so there is always a centre pixel
 
 
 
@@ -182,13 +182,14 @@ def slide_rasters_to_tiles(im, CLS, size):
     B=0
     for y in range(0, h-size):
         for x in range(0, w-size):
-            Label[B] = np.median(CLS[y:y+size,x:x+size].reshape(1,-1))+1 #added +1
+            Label[B] = np.median(CLS[y:y+size,x:x+size].reshape(1,-1)) #added +1
 
             TileTensor[B,:,:,:] = im[y:y+size,x:x+size,:].reshape(size,size,d)
             B+=1
 
     return TileTensor, Label
 
+##############################################################
 #Create the label vector
 def PrepareTensorData(ImageTile, ClassTile, size):
     #this takes the image tile tensor and the class tile tensor
@@ -241,6 +242,7 @@ def class_prediction_to_image(im, PredictedTiles, size):#size is size of tiny pa
 
     return TileImage
 
+##############################################################
 # This is a helper function to repeat a filter on 3 colour bands.  Avoids an extra loop in the big loops below
 def ColourFilter(Image):
     med = np.zeros(np.shape(Image))
@@ -389,42 +391,54 @@ for f,riv in enumerate(TestRiverTuple):
 #        PredictedClass = SimplifyClass(PredictedClass, ClassKey)
         
         
-  ##################################################################################################      			
+  ##################################################################################################  
+
+			
         #Prep the pixel data into a tensor of patches
         I_Stride1Tiles, Labels = slide_rasters_to_tiles(Im3D, PredictedClass, 5) 
-        I_Stride1Tiles = np.int16(I_Stride1Tiles) #/ 255
-        Labels1Hot = to_categorical(Labels, num_classes=NClasses)
-     
-
-        
+        I_Stride1Tiles = np.int16(I_Stride1Tiles) #/ 255 already normalised
+        Labels1Hot = to_categorical(Labels, num_classes=NClasses) #tried adding a plus 1 in the slide_rasters_to_tiles function
+        #so Labels1Hot went from 0-7 - but then there would be one too many classes fot the model to predict? So removed +1 from function
 
         print('Fitting patch CNN Classifier on ' + str(I_Stride1Tiles.shape[0]) + ' tiles')
         model.fit(x=I_Stride1Tiles, y=Labels1Hot, epochs=TrainingEpochs, batch_size=5000, verbose=Chatty)
-
-            
+        #Labels1Hot has 7 classes so should work because zeros aren't removed yet?
+        #Then following prediction argmax +1 is used so class labels correspond to actual classes >>
+        
         #Fit the predictor to all patches
         Predicted = model.predict(x=I_Stride1Tiles, batch_size=50000, verbose=Chatty)
-        Predicted = np.argmax(Predicted, axis=1)+1
+        Predicted = np.argmax(Predicted, axis=1)+1 #the +1 means that the classes correspond to their indices.
+        #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         
         #Reshape the predictions to image format and display
-        PredictedImage = Predicted.reshape(Im3D.shape[0]-5, Im3D.shape[1]-5)
+        PredictedImage = Predicted.reshape(Im3D.shape[0]-5, Im3D.shape[1]-5) #why the -5?
         if SmallestElement > 0:
             PredictedImage = modal(np.uint8(PredictedImage), disk(2*SmallestElement+1)) #clean up the class with a mode filter
 
+  ##################################################################################################      			
 
-        #Produce classification reports
-        Class = Class[0:Class.shape[0]-5, 0:Class.shape[1]-5]
-        PredictedClass = PredictedClass[0:PredictedClass.shape[0]-5, 0:PredictedClass.shape[1]-5]
-        Class = Class.reshape(-1,1)
+        """ PRODUCE CLASSIFICATION REPORTS """
+
+        Class = Class[0:Class.shape[0]-5, 0:Class.shape[1]-5] #makes sure Class is same shape as PredictedImage and PredictedClass
+        Class = Class.reshape(-1,1) #reshapes to a 1d vector
+
+        
+        PredictedClass = PredictedClass[0:PredictedClass.shape[0]-5, 0:PredictedClass.shape[1]-5] #makes the same shape as other output rasters
+
         PredictedImageVECT = PredictedImage.reshape(-1,1) #This is the pixel-based prediction
         PredictedClassVECT = PredictedClass.reshape(-1,1) # This is the CNN tiles prediction
-        PredictedImageVECT = PredictedImageVECT[Class != 0]
+        PredictedImageVECT = PredictedImageVECT[Class != 0] # removes the zeros
         PredictedClassVECT = PredictedClassVECT[Class != 0]
-        Class = Class[Class != 0]
+        
+        Class = Class[Class != 0] #removes zeros from classes
         Class = np.int32(Class)
+
         PredictedImageVECT = np.int32(PredictedImageVECT)
-        reportSSC = metrics.classification_report(Class, PredictedImageVECT, digits = 3)
+        PredictedClassVECT = np.int32(PredictedClassVECT)
+
+        reportSSC = metrics.classification_report(Class, PredictedImageVECT, digits = 3) #this is the one being troublesome
         reportCNN = metrics.classification_report(Class, PredictedClassVECT, digits = 3)
+        
         print('CNN tiled classification results for ' + os.path.basename(im))
         print(reportCNN)
         print('\n')
@@ -440,6 +454,9 @@ for f,riv in enumerate(TestRiverTuple):
         CNNname = ScorePath + 'CNN_' + os.path.basename(im)[:-4] + '_' + Experiment + '.csv'    
         classification_report_csv(reportCNN, CNNname)            
         
+        
+        """ SAVE AND OUTPUT FIGURE RESULTS """
+
         #Display and/or oputput figure results
         #PredictedImage = PredictedPixels.reshape(Entropy.shape[0], Entropy.shape[1])
         for c in range(0,6): #this sets 1 pixel to each class to standardise colour display
@@ -449,7 +466,7 @@ for f,riv in enumerate(TestRiverTuple):
         #get_ipython().run_line_magic('matplotlib', 'qt')
         plt.figure(figsize = (12, 9.5)) #reduce these values if you have a small screen
         plt.subplot(2,2,1)
-        plt.imshow(Im3D)
+        plt.imshow(Im3D[:,:,0:3])
         plt.title('Classification results for ' + os.path.basename(im), fontweight='bold')
         plt.xlabel('Input RGB Image', fontweight='bold')
         plt.subplot(2,2,2)
@@ -468,7 +485,8 @@ for f,riv in enumerate(TestRiverTuple):
         class7_box = mpatches.Patch(color='teal', label='Glacier Ice')
         
         ax=plt.gca()
-        ax.legend(handles=[class0_box, class1_box,class2_box,class3_box,class4_box,class5_box])
+        ax.legend(loc='upper center', bbox_to_anchor=(1.25, 1), shadow=True, handles=[class0_box, class1_box,class2_box,class3_box,class4_box,class5_box,class6_box,class7_box])
+    
         plt.subplot(2,2,3)
         plt.imshow(np.squeeze(PredictedClass), cmap=cmapCHM)
         plt.xlabel('CNN tiles Classification. F1: ' + GetF1(reportCNN), fontweight='bold')
