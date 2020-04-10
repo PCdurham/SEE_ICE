@@ -376,6 +376,8 @@ for f,riv in enumerate(TestRiverTuple):
         I_tiles = np.int16(I_tiles)
         #I_tiles = np.int16(I_tiles) / 255
         
+        ImCrop = None
+        
 # =============================================================================
         
         """ APPLY THE CONVNET """
@@ -387,6 +389,7 @@ for f,riv in enumerate(TestRiverTuple):
         #Convert the convnet one-hot predictions to a new class label image
         PredictedTiles[PredictedTiles < RecogThresh] = 0
         #PredictedTiles classes go from 0-6
+        I_tiles = None
         
         #Correct the classes so they correspond to input validation labels (1-7)
         PredictedTiles0_7 = np.insert(PredictedTiles, 0, values=PredictedTiles[:,0], axis=1)
@@ -398,6 +401,8 @@ for f,riv in enumerate(TestRiverTuple):
         #So now we have a class image of the VGG output with classes corresponding to indices
         #Zero column is removed later
         
+        PredictedTiles0_7 = None
+        
         #PredictedClass = SimplifyClass(PredictedClass, ClassKey)
 
         
@@ -406,21 +411,26 @@ for f,riv in enumerate(TestRiverTuple):
         
         PredictedClass0_6 = class_prediction_to_image(Class, PredictedTiles, size)
         #needed so the CSC CNN uses the same class system as VGG  
+        PredictedTiles = None
         
         #Prep the pixel data into a tensor of patches
         I_Stride1Tiles, Labels = slide_rasters_to_tiles(Im3D, PredictedClass0_6, 5) 
         I_Stride1Tiles = np.int16(I_Stride1Tiles) #/ 255 already normalised
-        Labels1Hot = to_categorical(Labels, num_classes=NClasses) 
+        Labels1Hot = to_categorical(Labels, num_classes=NClasses)
+        PredictedClass0_6 = None
+        Labels = None
 
         print('Fitting patch CNN Classifier on ' + str(I_Stride1Tiles.shape[0]) + ' tiles')
         model.fit(x=I_Stride1Tiles, y=Labels1Hot, epochs=TrainingEpochs, batch_size=5000, verbose=Chatty)
         #Labels1Hot has 7 classes going from 0-6
+        
         
         #Fit the predictor to all patches
         Predicted = model.predict(x=I_Stride1Tiles, batch_size=50000, verbose=Chatty)
         # The zero column is removed later so +1 argmax is used following predictions:
         Predicted = np.argmax(Predicted, axis=1)+1 
         #the +1 means that the classes now correspond to their indices.
+        I_Stride1Tiles = None
         
         #Reshape the predictions to image format and display
         PredictedImage = Predicted.reshape(Im3D.shape[0]-5, Im3D.shape[1]-5) #why the -5?
