@@ -44,6 +44,7 @@ SOFTWARE.
 """
 
 ###############################################################################
+
 """ Libraries"""
 from tensorflow.keras import regularizers
 from tensorflow.keras import optimizers
@@ -70,11 +71,10 @@ import sys
 from IPython import get_ipython #this can be removed if not using Spyder
 import glob
 
+###############################################################################
 
 
-#############################################################
 """User data input. Fill in the info below before running"""
-#############################################################
 
 ModelName = 'Train10035VGG16_10035stride13ims8eps'     #should be the model name from previous run of TrainCNN.py
 TrainPath = 'D:\\CNN_Data\\'  
@@ -126,12 +126,12 @@ if ('/' or "'\'") not in ScorePath[-1]:
 if os.path.exists(ScorePath) == False:
     os.mkdir(ScorePath)
 
-#####################################################################################################################
+
+###############################################################################
 
 
-##################################################################
-""" HELPER FUNCTIONS SECTION"""
-##################################################################
+""" HELPER FUNCTIONS SECTION """
+
 # Helper function to crop images to have an integer number of tiles. No padding is used.
 def CropToTile (Im, size):
     if len(Im.shape) == 2:#handle greyscale
@@ -141,7 +141,7 @@ def CropToTile (Im, size):
     crop_dim1 = size * (Im.shape[1]//size)
     return Im[0:crop_dim0, 0:crop_dim1, :]
     
-    
+# =============================================================================
 #Helper functions to move images in and out of tensor format
 def split_image_to_tiles(im, size):
     
@@ -167,7 +167,7 @@ def split_image_to_tiles(im, size):
 
     return TileTensor
 
-##############################################################
+# =============================================================================
 def slide_rasters_to_tiles(im, CLS, size):
     
     if len(im.shape) ==2:
@@ -189,7 +189,7 @@ def slide_rasters_to_tiles(im, CLS, size):
 
     return TileTensor, Label
 
-##############################################################
+# =============================================================================
 #Create the label vector
 def PrepareTensorData(ImageTile, ClassTile, size):
     #this takes the image tile tensor and the class tile tensor
@@ -215,7 +215,7 @@ def PrepareTensorData(ImageTile, ClassTile, size):
     return LabelVector, ClassifiedTiles
 
 
-#############################
+# =============================================================================
 def class_prediction_to_image(im, PredictedTiles, size):#size is size of tiny patches (in pixels)
 
     if len(im.shape) ==2:
@@ -242,7 +242,7 @@ def class_prediction_to_image(im, PredictedTiles, size):#size is size of tiny pa
 
     return TileImage
 
-##############################################################
+# =============================================================================
 # This is a helper function to repeat a filter on 3 colour bands.  Avoids an extra loop in the big loops below
 def ColourFilter(Image):
     med = np.zeros(np.shape(Image))
@@ -252,7 +252,7 @@ def ColourFilter(Image):
     return med
  
 
-##################################################################
+# =============================================================================
 #Save classification reports to csv with Pandas
 def classification_report_csv(report, filename):
     report_data = []
@@ -271,7 +271,7 @@ def classification_report_csv(report, filename):
     dataframe.to_csv(filename, index = False) 
 
 
-###############################################################################
+# =============================================================================
 # Return a class prediction to the 1-Nclasses hierarchical classes
 def SimplifyClass(ClassImage, ClassKey):
     Iclasses = np.unique(ClassImage)
@@ -283,7 +283,7 @@ def SimplifyClass(ClassImage, ClassKey):
 
 
 
-##########################################
+# =============================================================================
 #fetches the overall avg F1 score from a classification report
 def GetF1(report):
     lines = report.split('\n')
@@ -296,12 +296,12 @@ def GetF1(report):
 
 ###############################################################################
     
-"""Instantiate the CNN patch pixel-based classifier""" 
+""" INSTANTIATE THE CNN PATCH PIXEL-BASED CLASSIFIER """ 
    
 
 # define the patch CNN model with L2 regularization and dropout
 
-	# create model
+    # create model
 model = Sequential()
 model.add(Conv2D(Filters,Kernel_size, data_format='channels_last', input_shape=Input_shape)) #model.add(Conv2D(16,5, data_format='channels_last', input_shape=(5,5,4)))
 model.add(Flatten())
@@ -313,24 +313,21 @@ model.add(Dense(32, kernel_regularizer= regularizers.l2(0.001), kernel_initializ
 
 model.add(Dense(NClasses, kernel_initializer='normal', activation='softmax')) 
 
-#Tune an optimiser
+    # Tune an optimiser
 Optim = optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=True)
 
-# Compile model
+    # Compile model
 model.compile(loss='categorical_crossentropy', optimizer=Optim, metrics = ['accuracy'])
 
-
-model.summary()
+model.summary() 
 
 #EstimatorNN = KerasClassifier(build_fn=patchCNN_model_L2D, epochs=TrainingEpochs, batch_size=50000, verbose=Chatty)
-    
+  
 
-    
+# =============================================================================
 
+""" LOAD THE CONVNET MODEL """
 
-
-###############################################################################
-"""Load the convnet model"""
 #print('Loading re-trained convnet model produced by a run of TrainCNN.py')
 print('Loading ' + ModelName + '.h5')
 FullModelPath = TrainPath + ModelName + '.h5'
@@ -339,12 +336,14 @@ ConvNetmodel = load_model(FullModelPath)
 #ClassKeyPath = TrainPath + ModelName + '.csv'
 #ClassKey = pd.read_csv(ClassKeyPath)
 
-###############################################################################
-"""Classify the holdout images with CNN-Supervised Classification"""
+# =============================================================================
+
+""" CLASSIFY THE HOLDOUT IMAGES WITH THE CNN-SUPERVISED CLASSIFICATION """ 
+
 #size = 50 #Do not edit. The base models supplied all assume a tile size of 50.
 size = 100 #Do not edit. The base models supplied all assume a tile size of 50. #224
 
-# Getting River Names from the files
+# Getting Names from the files
 # Glob list fo all jpg images, get unique names form the total list
 img = glob.glob(PredictPath+"S2A*.tif")
 TestRiverTuple = []
@@ -355,12 +354,11 @@ TestRiverTuple = np.unique(TestRiverTuple)
 # Get training class images (covers tif and tiff file types)
 class_img = glob.glob(PredictPath + "SCLS_S2A*.tif")
 
-
 for f,riv in enumerate(TestRiverTuple):
     for i,im in enumerate(img): 
         print('CNN-supervised classification of ' + os.path.basename(im))
         Im3D = np.int16(io.imread(im))
-#        Im3D = io.imread(im)
+        #Im3D = io.imread(im)
         #print(isinstance(Im3D,uint8))
         if len(Im3D) == 2:
             Im3D = Im3D[0]
@@ -369,65 +367,79 @@ for f,riv in enumerate(TestRiverTuple):
             print('WARNING: inconsistent image and class mask sizes for ' + im)
             Class = T.resize(Class, (Im3D.shape[0], Im3D.shape[1]), preserve_range = True) #bug handling for vector
         ClassIm = copy.deepcopy(Class)
-        #Tile the images to run the convnet
-       
-##################################################################        
-#        Im3D =Im3D[:,:,0:3] # fixed error of expecting 3 bands and getting 4 for the I_stride1Tiles bit 
-##################################################################
         
+        #Tile the images to run the convnet
         ImCrop = CropToTile (Im3D[:,:,0:3], size)
-#        ImCrop = CropToTile (Im3D, size)
+        #ImCrop = CropToTile (Im3D, size)
         I_tiles = split_image_to_tiles(ImCrop, size)
-#        I_tiles = np.int16(I_tiles *0.0255)#change to maximum value in images - normalised
+        #I_tiles = np.int16(I_tiles *0.0255) #change to maximum value in images - normalised
         I_tiles = np.int16(I_tiles)
-
-#        I_tiles = np.int16(I_tiles) / 255
-        #Apply the convnet
+        #I_tiles = np.int16(I_tiles) / 255
+        
+# =============================================================================
+        
+        """ APPLY THE CONVNET """
+        
+        #Apply the initial VGG model to detect training areas
         print('Detecting CNN-supervised training areas')
+        
         PredictedTiles = ConvNetmodel.predict(I_tiles, batch_size = 32, verbose = Chatty)
         #Convert the convnet one-hot predictions to a new class label image
         PredictedTiles[PredictedTiles < RecogThresh] = 0
+        #PredictedTiles classes go from 0-6
         
-        PredictedTiles2 = np.insert(PredictedTiles, 0, values=PredictedTiles[:,0], axis=1)
-       
-        PredictedClass = class_prediction_to_image(Class, PredictedTiles2, size)
-        PredictedClass2 = class_prediction_to_image(Class, PredictedTiles, size)
-#        PredictedClass = SimplifyClass(PredictedClass, ClassKey)
+        #Correct the classes so they correspond to input validation labels (1-7)
+        PredictedTiles0_7 = np.insert(PredictedTiles, 0, values=PredictedTiles[:,0], axis=1)
+        #adds an extra column before the zero column (which is a exact replica of the 0 column)
+        #so that predictions go from 0-7 instead 
         
+        #Final output image for VGG classification:
+        PredictedClass = class_prediction_to_image(Class, PredictedTiles0_7, size)
+        #So now we have a class image of the VGG output with classes corresponding to indices
+        #Zero column is removed later
         
-  ##################################################################################################  
+        #PredictedClass = SimplifyClass(PredictedClass, ClassKey)
 
-			
+        
+        
+        """ APPLY THE PATCH CNN USING SAME CLASS SYSTEM """
+        
+        PredictedClass0_6 = class_prediction_to_image(Class, PredictedTiles, size)
+        #needed so the CSC CNN uses the same class system as VGG  
+        
         #Prep the pixel data into a tensor of patches
-        I_Stride1Tiles, Labels = slide_rasters_to_tiles(Im3D, PredictedClass2, 5) 
+        I_Stride1Tiles, Labels = slide_rasters_to_tiles(Im3D, PredictedClass0_6, 5) 
         I_Stride1Tiles = np.int16(I_Stride1Tiles) #/ 255 already normalised
-        Labels1Hot = to_categorical(Labels, num_classes=NClasses) #tried adding a plus 1 in the slide_rasters_to_tiles function
-        #so Labels1Hot went from 0-7 - but then there would be one too many classes fot the model to predict? So removed +1 from function
+        Labels1Hot = to_categorical(Labels, num_classes=NClasses) 
 
         print('Fitting patch CNN Classifier on ' + str(I_Stride1Tiles.shape[0]) + ' tiles')
         model.fit(x=I_Stride1Tiles, y=Labels1Hot, epochs=TrainingEpochs, batch_size=5000, verbose=Chatty)
-        #Labels1Hot has 7 classes so should work because zeros aren't removed yet?
-        #Then following prediction argmax +1 is used so class labels correspond to actual classes >>
+        #Labels1Hot has 7 classes going from 0-6
         
         #Fit the predictor to all patches
         Predicted = model.predict(x=I_Stride1Tiles, batch_size=50000, verbose=Chatty)
-        Predicted = np.argmax(Predicted, axis=1)+1 #the +1 means that the classes correspond to their indices.
-        #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        # The zero column is removed later so +1 argmax is used following predictions:
+        Predicted = np.argmax(Predicted, axis=1)+1 
+        #the +1 means that the classes now correspond to their indices.
         
         #Reshape the predictions to image format and display
         PredictedImage = Predicted.reshape(Im3D.shape[0]-5, Im3D.shape[1]-5) #why the -5?
         if SmallestElement > 0:
             PredictedImage = modal(np.uint8(PredictedImage), disk(2*SmallestElement+1)) #clean up the class with a mode filter
 
-  ##################################################################################################      			
+# =============================================================================
+
 
         """ PRODUCE CLASSIFICATION REPORTS """
 
-        Class = Class[0:Class.shape[0]-5, 0:Class.shape[1]-5] #makes sure Class is same shape as PredictedImage and PredictedClass
-        Class = Class.reshape(-1,1) #reshapes to a 1d vector
+        Class = Class[0:Class.shape[0]-5, 0:Class.shape[1]-5] 
+        #makes sure Class is same shape as PredictedImage and PredictedClass
+        Class = Class.reshape(-1,1) 
+        #reshapes to a 1d vector
 
         
-        PredictedClass = PredictedClass[0:PredictedClass.shape[0]-5, 0:PredictedClass.shape[1]-5] #makes the same shape as other output rasters
+        PredictedClass = PredictedClass[0:PredictedClass.shape[0]-5, 0:PredictedClass.shape[1]-5] 
+        #makes the same shape as other output rasters
 
         PredictedImageVECT = PredictedImage.reshape(-1,1) #This is the pixel-based prediction
         PredictedClassVECT = PredictedClass.reshape(-1,1) # This is the CNN tiles prediction
@@ -440,7 +452,7 @@ for f,riv in enumerate(TestRiverTuple):
         PredictedImageVECT = np.int32(PredictedImageVECT)
         PredictedClassVECT = np.int32(PredictedClassVECT)
 
-        reportSSC = metrics.classification_report(Class, PredictedImageVECT, digits = 3) #this is the one being troublesome
+        reportSSC = metrics.classification_report(Class, PredictedImageVECT, digits = 3)
         reportCNN = metrics.classification_report(Class, PredictedClassVECT, digits = 3)
         
         print('CNN tiled classification results for ' + os.path.basename(im))
@@ -458,6 +470,7 @@ for f,riv in enumerate(TestRiverTuple):
         CNNname = ScorePath + 'CNN_' + os.path.basename(im)[:-4] + '_' + Experiment + '.csv'    
         classification_report_csv(reportCNN, CNNname)            
         
+# =============================================================================
         
         """ SAVE AND OUTPUT FIGURE RESULTS """
 
