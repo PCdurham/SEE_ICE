@@ -89,7 +89,7 @@ Ndims = 4 # Feature Dimensions. 3 if just RGB, 4 will add a co-occurence entropy
 SubSample = 1 #0-1 percentage of the CNN output to use in the MLP. 1 gives the published results.
 NClasses = 7  #The number of classes in the data. This MUST be the same as the classes used to retrain the model
 SaveClassRaster = False #If true this will save each class image to disk.  Outputs are not geocoded in this script. For GIS integration, see CnnSupervisedClassification_PyQGIS.py
-DisplayHoldout =  False #Display the results figure which is saved to disk.  
+DisplayHoldout =  True #Display the results figure which is saved to disk.  
 OutDPI = 150 #Recommended 150 for inspection 1200 for papers.  
 
 '''FILTERING OPTIONS'''
@@ -237,7 +237,7 @@ def class_prediction_to_image(im, PredictedTiles, size):#size is size of tiny pa
             x2 = np.int32(x1 + size)
             y2 = np.int32(y1 + size)
             #TileTensor[B,:,:,:] = im[y1:y2,x1:x2].reshape(size,size,d)
-            TileImage[y1:y2,x1:x2] = np.argmax(PredictedTiles[B,:])+1
+            TileImage[y1:y2,x1:x2] = np.argmax(PredictedTiles[B,:])#+1
             B+=1
 
     return TileImage
@@ -387,7 +387,11 @@ for f,riv in enumerate(TestRiverTuple):
         PredictedTiles = ConvNetmodel.predict(I_tiles, batch_size = 32, verbose = Chatty)
         #Convert the convnet one-hot predictions to a new class label image
         PredictedTiles[PredictedTiles < RecogThresh] = 0
-        PredictedClass = class_prediction_to_image(Class, PredictedTiles, size)
+        
+        PredictedTiles2 = np.insert(PredictedTiles, 0, values=PredictedTiles[:,0], axis=1)
+       
+        PredictedClass = class_prediction_to_image(Class, PredictedTiles2, size)
+        PredictedClass2 = class_prediction_to_image(Class, PredictedTiles, size)
 #        PredictedClass = SimplifyClass(PredictedClass, ClassKey)
         
         
@@ -395,7 +399,7 @@ for f,riv in enumerate(TestRiverTuple):
 
 			
         #Prep the pixel data into a tensor of patches
-        I_Stride1Tiles, Labels = slide_rasters_to_tiles(Im3D, PredictedClass, 5) 
+        I_Stride1Tiles, Labels = slide_rasters_to_tiles(Im3D, PredictedClass2, 5) 
         I_Stride1Tiles = np.int16(I_Stride1Tiles) #/ 255 already normalised
         Labels1Hot = to_categorical(Labels, num_classes=NClasses) #tried adding a plus 1 in the slide_rasters_to_tiles function
         #so Labels1Hot went from 0-7 - but then there would be one too many classes fot the model to predict? So removed +1 from function
