@@ -79,7 +79,7 @@ import glob
 ModelName = 'Train10035VGG16_10035stride13ims8eps'     #should be the model name from previous run of TrainCNN.py
 TrainPath = 'D:\\CNN_Data\\'  
 PredictPath = 'D:\\S2_Images\\'   #Location of the images
-ScorePath = 'D:\\S2_Images\\ResultsPatch\\'      #location of the output files and the model
+ScorePath = 'D:\\S2_Images\\ResultsPatch\\PatchTest1\\'      #location of the output files and the model
 Experiment = 'PatchTest1'    #ID to append to output performance files
 
 '''BASIC PARAMETER CHOICES'''
@@ -89,7 +89,7 @@ Ndims = 4 # Feature Dimensions. 3 if just RGB, 4 will add a co-occurence entropy
 SubSample = 1 #0-1 percentage of the CNN output to use in the MLP. 1 gives the published results.
 NClasses = 7  #The number of classes in the data. This MUST be the same as the classes used to retrain the model
 SaveClassRaster = False #If true this will save each class image to disk.  Outputs are not geocoded in this script. For GIS integration, see CnnSupervisedClassification_PyQGIS.py
-DisplayHoldout =  True #Display the results figure which is saved to disk.  
+DisplayHoldout =  False #Display the results figure which is saved to disk.  
 OutDPI = 150 #Recommended 150 for inspection 1200 for papers.  
 
 '''FILTERING OPTIONS'''
@@ -424,19 +424,21 @@ for f,riv in enumerate(TestRiverTuple):
         model.fit(x=I_Stride1Tiles, y=Labels1Hot, epochs=TrainingEpochs, batch_size=5000, verbose=Chatty)
         #Labels1Hot has 7 classes going from 0-6
         
-        
         #Fit the predictor to all patches
         Predicted = model.predict(x=I_Stride1Tiles, batch_size=50000, verbose=Chatty)
         # The zero column is removed later so +1 argmax is used following predictions:
+        I_Stride1Tiles = None
+        Labels1Hot = None
+
         Predicted = np.argmax(Predicted, axis=1)+1 
         #the +1 means that the classes now correspond to their indices.
-        I_Stride1Tiles = None
         
         #Reshape the predictions to image format and display
         PredictedImage = Predicted.reshape(Im3D.shape[0]-5, Im3D.shape[1]-5) #why the -5?
         if SmallestElement > 0:
             PredictedImage = modal(np.uint8(PredictedImage), disk(2*SmallestElement+1)) #clean up the class with a mode filter
 
+        Predicted = None
 # =============================================================================
 
 
@@ -486,7 +488,7 @@ for f,riv in enumerate(TestRiverTuple):
 
         #Display and/or oputput figure results
         #PredictedImage = PredictedPixels.reshape(Entropy.shape[0], Entropy.shape[1])
-        for c in range(0,6): #this sets 1 pixel to each class to standardise colour display
+        for c in range(0,8): #this sets 1 pixel to each class to standardise colour display - max num add one to num of classes
             ClassIm[c,0] = c
             PredictedClass[c,0] = c
             PredictedImage[c,0] = c
@@ -494,31 +496,30 @@ for f,riv in enumerate(TestRiverTuple):
         plt.figure(figsize = (12, 9.5)) #reduce these values if you have a small screen
         plt.subplot(2,2,1)
         plt.imshow(Im3D[:,:,0:3])
-        plt.title('Classification results for ' + os.path.basename(im), fontweight='bold')
+        plt.title('Classification Results for ' + os.path.basename(im), fontweight='bold')
         plt.xlabel('Input RGB Image', fontweight='bold')
         plt.subplot(2,2,2)
-        cmapCHM = colors.ListedColormap(['black','orange','gold','mediumturquoise','teal','darkslategrey','lightgrey', 'darkgrey'])
+        cmapCHM = colors.ListedColormap(['black','orange','gold','mediumturquoise','lightgrey', 'darkgrey','teal','darkslategrey'])
         plt.imshow(np.squeeze(ClassIm), cmap=cmapCHM)
         plt.xlabel('Validation Labels', fontweight='bold')
         
 
         class0_box = mpatches.Patch(color='black', label='Unclassified')
-        class1_box = mpatches.Patch(color='darkgrey', label='Bedrock')
-        class2_box = mpatches.Patch(color='lightgrey', label='Snow on Rock')
-        class3_box = mpatches.Patch(color='darkslategrey', label='Snow on Ice')
-        class4_box = mpatches.Patch(color='mediumturquoise', label='Melange')
-        class5_box = mpatches.Patch(color='gold', label='Ice-berg Water')
-        class6_box = mpatches.Patch(color='orange', label='Open Water')
-        class7_box = mpatches.Patch(color='teal', label='Glacier Ice')
+        class1_box = mpatches.Patch(color='darkgrey', label='Snow on Ice')
+        class2_box = mpatches.Patch(color='lightgrey', label='Glacier Ice')
+        class3_box = mpatches.Patch(color='darkslategrey', label='Bedrock')
+        class4_box = mpatches.Patch(color='teal', label='Snow on Bedrock')
+        class5_box = mpatches.Patch(color='mediumturquoise', label='Mélange')
+        class6_box = mpatches.Patch(color='gold', label='Ice-berg Water')
+        class7_box = mpatches.Patch(color='orange', label='Open Water')
         
         ax=plt.gca()
         ax.legend(loc='upper center', bbox_to_anchor=(1.25, 1), shadow=True, handles=[class0_box, class1_box,class2_box,class3_box,class4_box,class5_box,class6_box,class7_box])
     
         plt.subplot(2,2,3)
         plt.imshow(np.squeeze(PredictedClass), cmap=cmapCHM)
-        plt.xlabel('CNN tiles Classification. F1: ' + GetF1(reportCNN), fontweight='bold')
+        plt.xlabel('CNN Tile Classification. F1: ' + GetF1(reportCNN), fontweight='bold')
         plt.subplot(2,2,4)
-        cmapCHM = colors.ListedColormap(['black','orange','gold','mediumturquoise','teal','darkslategrey','lightgrey', 'darkgrey'])
         plt.imshow(PredictedImage, cmap=cmapCHM)
         
         plt.xlabel('CNN-Supervised Classification. F1: ' + GetF1(reportSSC), fontweight='bold' )
