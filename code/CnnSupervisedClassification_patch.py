@@ -70,7 +70,6 @@ import copy
 import sys
 from IPython import get_ipython #this can be removed if not using Spyder
 import glob
-
 ###############################################################################
 
 
@@ -503,7 +502,6 @@ for f,riv in enumerate(TestRiverTuple):
         plt.imshow(np.squeeze(ClassIm), cmap=cmapCHM)
         plt.xlabel('Validation Labels', fontweight='bold')
         
-
         class0_box = mpatches.Patch(color='black', label='Unclassified')
         class1_box = mpatches.Patch(color='darkgrey', label='Snow on Ice')
         class2_box = mpatches.Patch(color='lightgrey', label='Glacier Ice')
@@ -514,7 +512,7 @@ for f,riv in enumerate(TestRiverTuple):
         class7_box = mpatches.Patch(color='orange', label='Open Water')
         
         ax=plt.gca()
-        ax.legend(loc='upper center', bbox_to_anchor=(1.25, 1), shadow=True, handles=[class0_box, class1_box,class2_box,class3_box,class4_box,class5_box,class6_box,class7_box])
+        ax.legend(loc='upper center', bbox_to_anchor=(1.3, 1.02), shadow=True, handles=[class0_box, class1_box,class2_box,class3_box,class4_box,class5_box,class6_box,class7_box])
     
         plt.subplot(2,2,3)
         plt.imshow(np.squeeze(PredictedClass), cmap=cmapCHM)
@@ -523,9 +521,9 @@ for f,riv in enumerate(TestRiverTuple):
         plt.imshow(PredictedImage, cmap=cmapCHM)
         
         plt.xlabel('CNN-Supervised Classification. F1: ' + GetF1(reportSSC), fontweight='bold' )
-        
+
         FigName = ScorePath + 'CSC_'+  Experiment + '_'+ os.path.basename(im)[:-4] +'.png'
-        plt.savefig(FigName, dpi=OutDPI)
+        plt.savefig(FigName, dpi=OutDPI, bbox_inches='tight')
         if not DisplayHoldout:
             plt.close()
         # Figure output below is NOT geocoded.
