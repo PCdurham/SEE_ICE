@@ -94,7 +94,7 @@ Ndims = 4 # Feature Dimensions. 3 if just RGB, 4 will add a co-occurence entropy
 SubSample = 1 #0-1 percentage of the CNN output to use in the MLP. 1 gives the published results.
 NClasses = 7  #The number of classes in the data. This MUST be the same as the classes used to retrain the model
 SaveClassRaster = False #If true this will save each class image to disk.  Outputs are not geocoded in this script. For GIS integration, see CnnSupervisedClassification_PyQGIS.py
-DisplayHoldout =  True #Display the results figure which is saved to disk.  
+DisplayHoldout =  False #Display the results figure which is saved to disk.  
 OutDPI = 150 #Recommended 150 for inspection 1200 for papers.  
 
 '''FILTERING OPTIONS'''
