@@ -181,7 +181,7 @@ def slide_rasters_to_tiles(im, CLS, size):
     B=0
     for y in range(0, h-size):
         for x in range(0, w-size):
-            Label[B] = np.median(CLS[y:y+size,x:x+size].reshape(1,-1)) #added +1
+            Label[B] = np.median(CLS[y:y+size,x:x+size].reshape(1,-1)) 
 
             TileTensor[B,:,:,:] = im[y:y+size,x:x+size,:].reshape(size,size,d)
             B+=1
