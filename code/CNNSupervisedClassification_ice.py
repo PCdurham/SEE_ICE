@@ -94,7 +94,7 @@ Ndims = 4 # Feature Dimensions. 3 if just RGB, 4 will add a co-occurence entropy
 SubSample = 1 #0-1 percentage of the CNN output to use in the MLP. 1 gives the published results.
 NClasses = 7  #The number of classes in the data. This MUST be the same as the classes used to retrain the model
 SaveClassRaster = False #If true this will save each class image to disk.  Outputs are not geocoded in this script. For GIS integration, see CnnSupervisedClassification_PyQGIS.py
-DisplayHoldout =  False #Display the results figure which is saved to disk.  
+DisplayHoldout =  True #Display the results figure which is saved to disk.  
 OutDPI = 150 #Recommended 150 for inspection 1200 for papers.  
 
 '''FILTERING OPTIONS'''
@@ -165,7 +165,7 @@ def split_image_to_tiles(im, size):
             y1 = np.int32(y * size)
             x2 = np.int32(x1 + size)
             y2 = np.int32(y1 + size)
-            TileTensor[B,:,:,:] = im[y1:y2,x1:x2].reshape(size,size,d)+1
+            TileTensor[B,:,:,:] = im[y1:y2,x1:x2].reshape(size,size,d)
             B+=1
 
     return TileTensor
@@ -218,7 +218,7 @@ def class_prediction_to_image(im, PredictedTiles, size):
             x2 = np.int32(x1 + size)
             y2 = np.int32(y1 + size)
             #TileTensor[B,:,:,:] = im[y1:y2,x1:x2].reshape(size,size,d)
-            TileImage[y1:y2,x1:x2] = np.argmax(PredictedTiles[B,:])+1
+            TileImage[y1:y2,x1:x2] = np.argmax(PredictedTiles[B,:])#removed +1
             B+=1
 
     return TileImage
@@ -422,9 +422,26 @@ for f,riv in enumerate(TestRiverTuple):
         PredictedTiles = ConvNetmodel.predict(I_tiles, batch_size = 32, verbose = Chatty) #batch size was originally 32
         #Convert the convnet one-hot predictions to a new class label image
         PredictedTiles[PredictedTiles < RecogThresh] = 0
-        PredictedClass = class_prediction_to_image(Class, PredictedTiles, size) #copy this function
-        #Set classes to 0 if they do not have MinTiles detected by the CNN
         
+        
+        
+#        PredictedClass = class_prediction_to_image(Class, PredictedTiles, size) #copy this function
+#        #Set classes to 0 if they do not have MinTiles detected by the CNN
+        
+        
+        
+        
+                #Correct the classes so they correspond to input validation labels (1-7)
+        PredictedTiles0_7 = np.insert(PredictedTiles, 0, values=PredictedTiles[:,0], axis=1)
+        #adds an extra column before the zero column (which is a exact replica of the 0 column)
+        #so that predictions go from 0-7 instead 
+        
+        #Final output image for VGG classification:
+        PredictedClass = class_prediction_to_image(Class, PredictedTiles0_7, size)
+        #So now we have a class image of the VGG output with classes corresponding to indices
+        #Zero column is removed later
+        PredictedClass0_6 = class_prediction_to_image(Class, PredictedTiles, size)
+
 ##############################################################################
 ###############################################################################        
         
@@ -524,7 +541,7 @@ for f,riv in enumerate(TestRiverTuple):
         
         #Display and/or oputput figure results
         #PredictedImage = PredictedPixels.reshape(Entropy.shape[0], Entropy.shape[1])
-        for c in range(0,6): #this sets 1 pixel to each class to standardise colour display
+        for c in range(0,8): #this sets 1 pixel to each class to standardise colour display
             ClassIm[c,0] = c
             PredictedClass[c,0] = c
             PredictedImage[c,0] = c
@@ -550,16 +567,6 @@ for f,riv in enumerate(TestRiverTuple):
         class6_box = mpatches.Patch(color='orange', label='Open Water')
         class7_box = mpatches.Patch(color='teal', label='Glacier Ice')
 
-        
-#        class0_box = mpatches.Patch(color='black', label='Unclassified')
-#        class1_box = mpatches.Patch(color='lightblue', label='Water')
-#        class2_box = mpatches.Patch(color='orange', label='Sediment')
-#        class3_box = mpatches.Patch(color='green', label='Green Veg.')
-#        class4_box = mpatches.Patch(color='yellow', label='Senesc. Veg.')
-#        class5_box = mpatches.Patch(color='red', label='Paved Road')
-#        class6_box = mpatches.Patch(color='gold', label='Paved Road')
-#        class7_box = mpatches.Patch(color='grey', label='Paved Road')
-
         ax=plt.gca()
         ax.legend(handles=[class0_box, class1_box,class2_box,class3_box,class4_box,class5_box,class6_box,class7_box])
         plt.subplot(2,2,3)
@@ -567,7 +574,6 @@ for f,riv in enumerate(TestRiverTuple):
         plt.xlabel('CNN tiles Classification. F1: ' + GetF1(reportCNN), fontweight='bold')
        
         plt.subplot(2,2,4)
-        cmapCHM = colors.ListedColormap(['black', 'lightblue','orange','green','yellow','red','gold','grey'])
         plt.imshow(PredictedImage, cmap=cmapCHM)
         
         plt.xlabel('CNN-Supervised Classification. F1: ' + GetF1(reportSSC), fontweight='bold' )
