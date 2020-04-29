@@ -75,16 +75,16 @@ import glob
 
 """User data input. Fill in the info below before running"""
 
-ModelName = 'Train10035VGG16_10035stride13ims8eps'     #should be the model name from previous run of TrainCNN.py
+ModelName = 'Train6030VGG16_13ims8eps'     #should be the model name from previous run of TrainCNN.py
 TrainPath = 'D:\\CNN_Data\\'  
 PredictPath = 'D:\\S2_Images\\'   #Location of the images
-ScorePath = 'D:\\S2_Images\\ResultsPatch\\PatchTest1\\'      #location of the output files and the model
-Experiment = 'PatchTest1'    #ID to append to output performance files
+ScorePath = 'D:\\S2_Images\\Results_Helheim13_09_19\\'      #location of the output files and the model
+Experiment = 'VGG60_CSC_PatchSize5'    #ID to append to output performance files
 
 '''BASIC PARAMETER CHOICES'''
 UseSmote = False #Turn SMOTE-ENN resampling on and off
-TrainingEpochs = 25 #Typically this can be reduced
-Ndims = 4 # Feature Dimensions. 3 if just RGB, 4 will add a co-occurence entropy on 11x11 pixels.  There is NO evidence showing that this actually improves the outcomes. RGB is recommended.
+TrainingEpochs = 1 #Typically this can be reduced
+Ndims = 3 # Feature Dimensions. 3 if just RGB, 4 will add a co-occurence entropy on 11x11 pixels.  There is NO evidence showing that this actually improves the outcomes. RGB is recommended.
 SubSample = 1 #0-1 percentage of the CNN output to use in the MLP. 1 gives the published results.
 NClasses = 7  #The number of classes in the data. This MUST be the same as the classes used to retrain the model
 SaveClassRaster = False #If true this will save each class image to disk.  Outputs are not geocoded in this script. For GIS integration, see CnnSupervisedClassification_PyQGIS.py
@@ -106,11 +106,12 @@ LearningRate = 0.001
 Chatty = 1 # set the verbosity of the model training.  Use 1 at first, 0 when confident that model is well tuned
 MinSample = 250000 #minimum sample size per class before warning
 
-Filters = 16
+Filters = 32
 Kernel_size = 5 
 Input_shape = (5,5,4)
 #can change but has to be an odd number so there is always a centre pixel
 
+size = 60 #Do not edit. The base models supplied all assume a tile size of 50. #224
 
 
 # Path checks- checks for folder ending slash, adds if nessesary
@@ -253,23 +254,56 @@ def ColourFilter(Image):
 
 # =============================================================================
 #Save classification reports to csv with Pandas
+
+
 def classification_report_csv(report, filename):
     report_data = []
-    lines = report.split('\n')
-    for line in lines[2:-5]:
+    report = report.replace('avg', "")
+    report = report.replace('accuracy', "Accuracy")
+    report = report.replace('macro', "Macro_avg")
+    report = report.replace('weighted', "Weighted_avg")
+    
+    lines = report.split("\n")
+    no_empty_lines = [line for line in lines if line.strip()]
+        
+    for line in no_empty_lines[1:]:
         row = {}
-        row_data = line.split(' ') 
+        row_data = line.split(' ')
         row_data = list(filter(None, row_data))
-        row['class'] = row_data[0]
-        row['precision'] = float(row_data[1])
-        row['recall'] = float(row_data[2])
-        row['f1_score'] = float(row_data[3])
-        row['support'] = float(row_data[4])
+        if 'Accuracy' in line:
+            row_data.insert(1, 'None')
+            row_data.insert(2, 'None')
+            
+        row['Class'] = row_data[0]
+        row['Precision'] = (row_data[1])
+        row['Recall'] = (row_data[2])
+        row['F1_score'] = float(row_data[3])
+        row['Support'] = float(row_data[4])
         report_data.append(row)
     dataframe = pd.DataFrame.from_dict(report_data)
     dataframe.to_csv(filename, index = False) 
 
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        #CHANGED from original to save overall accuracy
+        #Original code:
+        
+#def classification_report_csv(report, filename):
+#    report_data = []
+#    lines = report.split('\n')
+#    for line in lines[2:-5]:
+#        row = {}
+#        row_data = line.split(' ') 
+#        row_data = list(filter(None, row_data))
+#        row['class'] = row_data[0]
+#        row['precision'] = float(row_data[1])
+#        row['recall'] = float(row_data[2])
+#        row['f1_score'] = float(row_data[3])
+#        row['support'] = float(row_data[4])
+#        report_data.append(row)
+#    dataframe = pd.DataFrame.from_dict(report_data)
+#    dataframe.to_csv(filename, index = False) 
 
+ 
 # =============================================================================
 # Return a class prediction to the 1-Nclasses hierarchical classes
 def SimplifyClass(ClassImage, ClassKey):
@@ -340,7 +374,7 @@ ConvNetmodel = load_model(FullModelPath)
 """ CLASSIFY THE HOLDOUT IMAGES WITH THE CNN-SUPERVISED CLASSIFICATION """ 
 
 #size = 50 #Do not edit. The base models supplied all assume a tile size of 50.
-size = 100 #Do not edit. The base models supplied all assume a tile size of 50. #224
+#size = 60 #Do not edit. The base models supplied all assume a tile size of 50. #224
 
 # Getting Names from the files
 # Glob list fo all jpg images, get unique names form the total list
@@ -413,7 +447,7 @@ for f,riv in enumerate(TestRiverTuple):
         PredictedTiles = None
         
         #Prep the pixel data into a tensor of patches
-        I_Stride1Tiles, Labels = slide_rasters_to_tiles(Im3D, PredictedClass0_6, 5) 
+        I_Stride1Tiles, Labels = slide_rasters_to_tiles(Im3D, PredictedClass0_6, Kernel_size) 
         I_Stride1Tiles = np.int16(I_Stride1Tiles) #/ 255 already normalised
         Labels1Hot = to_categorical(Labels, num_classes=NClasses)
         PredictedClass0_6 = None
