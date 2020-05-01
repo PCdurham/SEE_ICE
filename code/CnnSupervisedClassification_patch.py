@@ -78,12 +78,12 @@ import glob
 ModelName = 'Train6030VGG16_13ims8eps'     #should be the model name from previous run of TrainCNN.py
 TrainPath = 'D:\\CNN_Data\\'  
 PredictPath = 'D:\\S2_Images\\'   #Location of the images
-ScorePath = 'D:\\S2_Images\\Results_Helheim13_09_19\\'      #location of the output files and the model
-Experiment = 'VGG60_CSC_PatchSize5'    #ID to append to output performance files
+ScorePath = 'D:\\S2_Images\\Results_pixel\\'      #location of the output files and the model
+Experiment = 'VGG60_CSC_PatchSize1'    #ID to append to output performance files
 
 '''BASIC PARAMETER CHOICES'''
 UseSmote = False #Turn SMOTE-ENN resampling on and off
-TrainingEpochs = 1 #Typically this can be reduced
+TrainingEpochs = 25 #Typically this can be reduced
 Ndims = 3 # Feature Dimensions. 3 if just RGB, 4 will add a co-occurence entropy on 11x11 pixels.  There is NO evidence showing that this actually improves the outcomes. RGB is recommended.
 SubSample = 1 #0-1 percentage of the CNN output to use in the MLP. 1 gives the published results.
 NClasses = 7  #The number of classes in the data. This MUST be the same as the classes used to retrain the model
@@ -107,8 +107,8 @@ Chatty = 1 # set the verbosity of the model training.  Use 1 at first, 0 when co
 MinSample = 250000 #minimum sample size per class before warning
 
 Filters = 32
-Kernel_size = 5 
-Input_shape = (5,5,4)
+Kernel_size = 1 
+Input_shape = (1,1,4)
 #can change but has to be an odd number so there is always a centre pixel
 
 size = 60 #Do not edit. The base models supplied all assume a tile size of 50. #224
@@ -271,8 +271,8 @@ def classification_report_csv(report, filename):
         row_data = line.split(' ')
         row_data = list(filter(None, row_data))
         if 'Accuracy' in line:
-            row_data.insert(1, 'None')
-            row_data.insert(2, 'None')
+            row_data.insert(1, 'NaN')
+            row_data.insert(2, 'NaN')
             
         row['Class'] = row_data[0]
         row['Precision'] = (row_data[1])
@@ -379,6 +379,7 @@ ConvNetmodel = load_model(FullModelPath)
 # Getting Names from the files
 # Glob list fo all jpg images, get unique names form the total list
 img = glob.glob(PredictPath+"S2A*.tif")
+
 TestRiverTuple = []
 for im in img:
     TestRiverTuple.append(os.path.basename(im).partition('_')[0])
@@ -467,7 +468,7 @@ for f,riv in enumerate(TestRiverTuple):
         #the +1 means that the classes now correspond to their indices.
         
         #Reshape the predictions to image format and display
-        PredictedImage = Predicted.reshape(Im3D.shape[0]-5, Im3D.shape[1]-5) #why the -5?
+        PredictedImage = Predicted.reshape(Im3D.shape[0]-Kernel_size, Im3D.shape[1]-Kernel_size) #why the -5? (Im3D.shape[0]-5, Im3D.shape[1]-5)
         if SmallestElement > 0:
             PredictedImage = modal(np.uint8(PredictedImage), disk(2*SmallestElement+1)) #clean up the class with a mode filter
 
@@ -477,13 +478,13 @@ for f,riv in enumerate(TestRiverTuple):
 
         """ PRODUCE CLASSIFICATION REPORTS """
 
-        Class = Class[0:Class.shape[0]-5, 0:Class.shape[1]-5] 
+        Class = Class[0:Class.shape[0]-Kernel_size, 0:Class.shape[1]-Kernel_size] 
         #makes sure Class is same shape as PredictedImage and PredictedClass
         Class = Class.reshape(-1,1) 
         #reshapes to a 1d vector
 
         
-        PredictedClass = PredictedClass[0:PredictedClass.shape[0]-5, 0:PredictedClass.shape[1]-5] 
+        PredictedClass = PredictedClass[0:PredictedClass.shape[0]-Kernel_size, 0:PredictedClass.shape[1]-Kernel_size] 
         #makes the same shape as other output rasters
 
         PredictedImageVECT = PredictedImage.reshape(-1,1) #This is the pixel-based prediction
