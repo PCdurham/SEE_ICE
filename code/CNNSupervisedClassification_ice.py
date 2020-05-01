@@ -67,12 +67,12 @@ import glob
 """User data input. Fill in the info below before running"""
 #############################################################
 
-ModelName = 'Train10035VGG16_10035stride13ims8eps'     #should be the model name from previous run of TrainCNN.py
+ModelName = 'Train6030VGG16_13ims8eps'     #should be the model name from previous run of TrainCNN.py
 #<<<<<<< HEAD
 TrainPath = 'D:\\CNN_Data\\'  
 PredictPath = 'D:\\S2_Images\\'    #Location of the images
 IndividualValidTile = 'D:\\S2_Images\\SCLS_S2A1.tif\\'
-ScorePath = 'D:\\S2_Images\\Results\\'      #location of the output files and the model
+ScorePath = 'D:\\S2_Images\\Results_pixel\\'      #location of the output files and the model
 #=======
 #size = 100 #size of tiles in the model
 
@@ -82,19 +82,19 @@ ScorePath = 'D:\\S2_Images\\Results\\'      #location of the output files and th
 #ScorePath = 'E:\\SEE_ICE\\S2_Images\\Results\\'      #location of the output files and the model
 #>>>>>>> 4af6d33b4fcec9ef14ad7cbdb1bf08b860321b5c
 Experiment = 'Test1CSC'    #ID to append to output performance files
-size = 100 #Size of the tiles
+size = 60 #Size of the tiles
 
 
 
 '''BASIC PARAMETER CHOICES'''
 UseSmote = False #Turn SMOTE-ENN resampling on and off
 MLP = True #If false, the phase 2 class will be done with a random forest
-TrainingEpochs = 35 #Typically this can be reduced
+TrainingEpochs = 25 #Typically this can be reduced
 Ndims = 4 # Feature Dimensions. 3 if just RGB, 4 will add a co-occurence entropy on 11x11 pixels.  There is NO evidence showing that this actually improves the outcomes. RGB is recommended.
 SubSample = 1 #0-1 percentage of the CNN output to use in the MLP. 1 gives the published results.
 NClasses = 7  #The number of classes in the data. This MUST be the same as the classes used to retrain the model
 SaveClassRaster = False #If true this will save each class image to disk.  Outputs are not geocoded in this script. For GIS integration, see CnnSupervisedClassification_PyQGIS.py
-DisplayHoldout =  False #Display the results figure which is saved to disk.  
+DisplayHoldout =  True #Display the results figure which is saved to disk.  
 OutDPI = 150 #Recommended 150 for inspection 1200 for papers.  
 
 '''FILTERING OPTIONS'''
@@ -234,22 +234,51 @@ def ColourFilter(Image):
 
 ##################################################################
 #Save classification reports to csv with Pandas
+#def classification_report_csv(report, filename):
+#    report_data = []
+#    lines = report.split('\n')
+#    for line in lines[2:-5]:
+#        row = {}
+#        row_data = line.split(' ') 
+#        row_data = list(filter(None, row_data))
+#        row['class'] = row_data[0]
+#        row['precision'] = float(row_data[1])
+#        row['recall'] = float(row_data[2])
+#        row['f1_score'] = float(row_data[3])
+#        row['support'] = float(row_data[4])
+#        report_data.append(row)
+#    dataframe = pd.DataFrame.from_dict(report_data)
+#    dataframe.to_csv(filename, index = False) 
+
+#Save classification reports to csv with Pandas
+
+
 def classification_report_csv(report, filename):
     report_data = []
-    lines = report.split('\n')
-    for line in lines[2:-5]:
+    report = report.replace('avg', "")
+    report = report.replace('accuracy', "Accuracy")
+    report = report.replace('macro', "Macro_avg")
+    report = report.replace('weighted', "Weighted_avg")
+    
+    lines = report.split("\n")
+    no_empty_lines = [line for line in lines if line.strip()]
+        
+    for line in no_empty_lines[1:]:
         row = {}
-        row_data = line.split(' ') 
+        row_data = line.split(' ')
         row_data = list(filter(None, row_data))
-        row['class'] = row_data[0]
-        row['precision'] = float(row_data[1])
-        row['recall'] = float(row_data[2])
-        row['f1_score'] = float(row_data[3])
-        row['support'] = float(row_data[4])
+        if 'Accuracy' in line:
+            row_data.insert(1, 'NaN')
+            row_data.insert(2, 'NaN')
+            
+        row['Class'] = row_data[0]
+        row['Precision'] = (row_data[1])
+        row['Recall'] = (row_data[2])
+        row['F1_score'] = float(row_data[3])
+        row['Support'] = float(row_data[4])
         report_data.append(row)
     dataframe = pd.DataFrame.from_dict(report_data)
     dataframe.to_csv(filename, index = False) 
-
 
 ###############################################################################
 # Return a class prediction to the 1-Nclasses hierarchical classes
@@ -467,7 +496,7 @@ for f,riv in enumerate(TestRiverTuple):
         b = MedImage[:,:,2]
         NIR = MedImage[:,:,3]
         #Vectorise the bands, use the classification prdicted by the AI
-        m = np.ndarray.flatten(PredictedClass).reshape(-1,1) 
+        m = np.ndarray.flatten(PredictedClass0_6).reshape(-1,1) 
         rv = np.ndarray.flatten(r).reshape(-1,1)
         gv = np.ndarray.flatten(g).reshape(-1,1)
         bv = np.ndarray.flatten(b).reshape(-1,1)
@@ -554,18 +583,19 @@ for f,riv in enumerate(TestRiverTuple):
         plt.xlabel('Input RGB Image', fontweight='bold')
         
         plt.subplot(2,2,2)
-        cmapCHM = colors.ListedColormap(['black','orange','gold','mediumturquoise','teal','darkslategrey','lightgrey', 'darkgrey'])
+        cmapCHM = colors.ListedColormap(['black','orange','gold','mediumturquoise','lightgrey', 'darkgrey','teal','darkslategrey'])
         plt.imshow(np.squeeze(ClassIm), cmap=cmapCHM)
         plt.xlabel('Validation Labels', fontweight='bold')
         
         class0_box = mpatches.Patch(color='black', label='Unclassified')
-        class1_box = mpatches.Patch(color='darkgrey', label='Bedrock')
-        class2_box = mpatches.Patch(color='lightgrey', label='Snow on Rock')
-        class3_box = mpatches.Patch(color='darkslategrey', label='Snow on Ice')
-        class4_box = mpatches.Patch(color='mediumturquoise', label='Melange')
-        class5_box = mpatches.Patch(color='gold', label='Ice-berg Water')
-        class6_box = mpatches.Patch(color='orange', label='Open Water')
-        class7_box = mpatches.Patch(color='teal', label='Glacier Ice')
+        class1_box = mpatches.Patch(color='darkgrey', label='Snow on Ice')
+        class2_box = mpatches.Patch(color='lightgrey', label='Glacier Ice')
+        class3_box = mpatches.Patch(color='darkslategrey', label='Bedrock')
+        class4_box = mpatches.Patch(color='teal', label='Snow on Bedrock')
+        class5_box = mpatches.Patch(color='mediumturquoise', label='Mélange')
+        class6_box = mpatches.Patch(color='gold', label='Ice-berg Water')
+        class7_box = mpatches.Patch(color='orange', label='Open Water')
+
 
         ax=plt.gca()
         ax.legend(handles=[class0_box, class1_box,class2_box,class3_box,class4_box,class5_box,class6_box,class7_box])
