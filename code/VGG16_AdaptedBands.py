@@ -122,15 +122,15 @@ model.add(layers.Dense(7, activation='softmax'))
 
 #LabelTensor.shape[1]
 #Freeze all or part of the convolutional base to keep imagenet weigths intact
-conv_base.trainable = True
-set_trainable = True
-#for layer in conv_base.layers:
-#    if (layer.name == 'block5_conv3') or (layer.name == 'block5_conv2') or (layer.name == 'block5_conv1'):# or (layer.name == 'block5_conv3'):
-#        set_trainable = True
-#    if set_trainable:
-#        layer.trainable = True
-#    else:
-#        layer.trainable = False
+# conv_base.trainable = False
+# set_trainable = True
+# for layer in conv_base.layers:
+#     if (layer.name == 'block5_conv3') or (layer.name == 'block5_conv2') or (layer.name == 'block5_conv1'):# or (layer.name == 'block5_conv3'):
+#         set_trainable = True
+#     if set_trainable:
+#         layer.trainable = True
+#     else:
+#         layer.trainable = False
 
 model.summary()          
 
