@@ -2,10 +2,10 @@
 """
 Created on Wed Jan  8 15:20:26 2020
 
-@author: Melanie Marochov
+@authors: Melanie Marochov and Patrice Carbonneau
 
 
-VGG16 model with 4 input bands, meant to be used with RGB_NIR.  Note that transfer learning is no longer an option.
+VGG16 model with 4 input bands, meant to be used with RGB+NIR imagery.  Note that transfer learning is no longer an option.
 
 """
 
