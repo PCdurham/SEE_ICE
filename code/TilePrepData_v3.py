@@ -23,9 +23,9 @@ ImName = 'clip_08_02RGBN.tif' #name of image to be tiled
 ClassName = 'Train_08_02RGB.tif' #name of class raster used to assign classes to tiles
 ImFolder = 'E:\\Masters\\Helheim19\\zr_08_02\\clip\\' #location of image to be tiled
 DataFolder = 'D:\\CNN_Data\\' #folder location for output tiles
-size = 224 #size (in pixels) of output tiles
-stride =32 #number of pixels the tiler slides before extracting another tile
-LastTile =109200 #last tile number from previous image
+size = 50 #size (in pixels) of output tiles
+stride =30 #number of pixels the tiler slides before extracting another tile
+LastTile =231258 #last tile number from previous image
 
 # =============================================================================
 ###############################################################################
@@ -148,7 +148,7 @@ def save_tile(I, LabelVector, CurrentTile, DataFolder, size, stride):
 #Load image
 Im3D = IO.imread(ImFolder+ImName)
 ClassRaster = IO.imread(ImFolder+ClassName)
-Im3D = Im3D[:,:,0:3]
+#Im3D = Im3D[:,:,0:3]
 
 
 # =============================================================================
