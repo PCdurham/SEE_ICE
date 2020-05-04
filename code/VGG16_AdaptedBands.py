@@ -36,6 +36,7 @@ import matplotlib.pyplot as plt
 import itertools
 from tensorflow.keras.applications.vgg16 import VGG16
 from sklearn.preprocessing import MultiLabelBinarizer
+from sklearn.model_selection import train_test_split
 # =============================================================================
 # =============================================================================
 
@@ -46,6 +47,8 @@ train_path = 'D:\CNN_Data\Train10030'
 valid_path = 'D:\CNN_Data\Valid10030'
 test_path = 'D:\CNN_Data\Test10030'
 training_epochs = 8
+ModelTuning = False #set to True if you need to tune the training epochs. Remember to lengthen the epochs
+TuningFigureName = 'Test'#name of the tuning figure, no need to add the path
 learning_rate = 0.0001
 verbosity = 1
 ModelOutputName = 'VGG16_13ims'  #where the model will be saved
@@ -122,15 +125,15 @@ model.add(layers.Dense(7, activation='softmax'))
 
 #LabelTensor.shape[1]
 #Freeze all or part of the convolutional base to keep imagenet weigths intact
-conv_base.trainable = True
-set_trainable = True
-#for layer in conv_base.layers:
-#    if (layer.name == 'block5_conv3') or (layer.name == 'block5_conv2') or (layer.name == 'block5_conv1'):# or (layer.name == 'block5_conv3'):
-#        set_trainable = True
-#    if set_trainable:
-#        layer.trainable = True
-#    else:
-#        layer.trainable = False
+# conv_base.trainable = False
+# set_trainable = True
+# for layer in conv_base.layers:
+#     if (layer.name == 'block5_conv3') or (layer.name == 'block5_conv2') or (layer.name == 'block5_conv1'):# or (layer.name == 'block5_conv3'):
+#         set_trainable = True
+#     if set_trainable:
+#         layer.trainable = True
+#     else:
+#         layer.trainable = False
 
 model.summary()          
 
@@ -146,9 +149,48 @@ test_batches = ImageDataGenerator().flow_from_directory(test_path, target_size=(
 
 # =============================================================================
 
-""" TRAIN FINE-TUNED VGG16 MODEL """
+""" TRAIN OR TUNE VGG16 MODEL """
 
 model.compile(Adam(lr=learning_rate), loss= 'categorical_crossentropy', metrics=['accuracy'])
+
+
+
+if ModelTuning:
+    #Split the data for tuning. Use a double pass of train_test_split to shave off some data
+    (trainX, testX, trainY, testY) = train_test_split(ImageTensor, LabelTensor, test_size=TuningSubSamp-0.001)
+    (Partiel_trainX, Partiel_testX, Partiel_trainY, Partiel_testY) = train_test_split(testX, testY, test_size=0.25)
+    del(ImageTensor, LabelTensor)
+    history = model.fit(Partiel_trainX, Partiel_trainY, epochs = training_epochs, batch_size = 75, validation_data = (Partiel_testX, Partiel_testY))
+    #Plot the test results
+    history_dict = history.history
+    loss_values = history_dict['loss']
+    val_loss_values = history_dict['val_loss']
+    
+    epochs = range(1, len(loss_values) + 1)
+    plt.figure(figsize = (12, 9.5))
+    plt.subplot(1,2,1)
+    plt.plot(epochs, loss_values, 'bo', label = 'Training loss')
+    plt.plot(epochs,val_loss_values, 'b', label = 'Validation loss')
+    plt.title('Training and Validation Loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+    
+    acc_values = history_dict['acc']
+    val_acc_values = history_dict['val_acc']
+    plt.subplot(1,2,2)
+    plt.plot(epochs, acc_values, 'go', label = 'Training acc')
+    plt.plot(epochs, val_acc_values, 'g', label = 'Validation acc')
+    plt.title('Training and Validation Accuracy')
+    plt.xlabel('Epochs')
+    plt.ylabel('Accuracy')
+    plt.legend()
+    plt.show()
+    FigName = ScorePath + TuningFigureName
+    plt.savefig(FigName, dpi=900)
+    
+    sys.exit("Tuning Finished, adjust parameters and re-train the model") # stop the code if still in tuning phase.
+
 
 #To train the model - fits the model to our batches. Epochs should be number of images in training batches divided by number of batches
 model.fit_generator(train_batches, steps_per_epoch=39560,
