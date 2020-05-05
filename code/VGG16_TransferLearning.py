@@ -43,9 +43,9 @@ from sklearn.model_selection import train_test_split
 """USER INPUTS"""
 
 #Trained model and class key will also be written out to the training folder
-train_path = 'F:\\SEE_ICE\\TileSize_50\\TileSize_50\\Train5030'
-valid_path = 'F:\\SEE_ICE\\TileSize_50\\TileSize_50\\Valid5030'
-test_path = 'F:\\SEE_ICE\\TileSize_50\\TileSize_50\\\Test5030'
+train_path = 'G:\\SEE_ICE\\TileSize_50\\TileSize_50\\Train5030'
+valid_path = 'G:\\SEE_ICE\\TileSize_50\\TileSize_50\\Valid5030'
+test_path = 'G:\\SEE_ICE\\TileSize_50\\TileSize_50\\\Test5030'
 TileSize = 50
 training_epochs = 7
 ModelTuning = False #set to True if you need to tune the training epochs. Remember to lengthen the epochs
@@ -53,7 +53,8 @@ TuningFigureName = 'Tune_VGG16_3Bands_TL'#name of the tuning figure, no need to 
 learning_rate = 0.0001
 verbosity = 1
 ModelOutputName = 'VGG16_3Bands_TL'  #where the model will be saved
-
+ImType='.jpg' #jpg or tif
+Nbands=3 #can only be 3 if using this script with imagenet weights
 #plots images with labels
 def plots(ims, figsize=(12,6), rows=1, interp=False, titles=None):
     if type(ims[0]) is np.ndarray:
@@ -105,16 +106,17 @@ def plot_confusion_matrix(cm, classes,
     plt.xlabel('Predicted label')
     
     
-def CompileTensor(path, size, Nbands):
+def CompileTensor(path, size, Nbands, ImType):
     MasterTensor = np.zeros((1,size,size,Nbands))
     MasterLabels = np.zeros((1,1))
     for c in range(1,8):
         fullpath=path+'\\C'+str(c)
-        img = glob.glob(fullpath+"\\*.jpg")
+        img = glob.glob(fullpath+"\\*"+ImType)
         tensor=np.zeros(((len(img),size,size,Nbands)))
         labels=np.zeros((len(img),1))
         for i in range(len(img)):
-            tensor[i,:,:,:]=io.imread(img[i])/255
+            I=io.imread(img[i])/255
+            tensor[i,:,:,:]=I[:,:,0:Nbands]
             labels[i]=c
         MasterTensor=np.concatenate((MasterTensor,tensor), axis=0)
         MasterLabels=np.concatenate((MasterLabels,labels), axis=0)
@@ -131,7 +133,7 @@ def CompileTensor(path, size, Nbands):
 """Convnet section"""
 ##########################################################
 #Setup the convnet and add dense layers for the big tile model
-conv_base = VGG16(weights='imagenet', include_top = False, input_shape = (TileSize,TileSize,3)) #used to be input_shape = (224,224,3)
+conv_base = VGG16(weights='imagenet', include_top = False, input_shape = (TileSize,TileSize,Nbands)) #used to be input_shape = (224,224,3)
 conv_base.summary()
 model = models.Sequential()
 model.add(conv_base)
@@ -165,10 +167,10 @@ model.summary()
 # =============================================================================
 
 """ Compile Tensors """
-TrainTensor, TrainLabels_sparse = CompileTensor(train_path, TileSize, 3)
+TrainTensor, TrainLabels_sparse = CompileTensor(train_path, TileSize, Nbands, ImType)
 Trainlabels=to_categorical(TrainLabels_sparse)
 if ModelTuning:
-    ValidTensor, ValidLabels_sparse = CompileTensor(valid_path, TileSize, 3)
+    ValidTensor, ValidLabels_sparse = CompileTensor(valid_path, Nbands, ImType)
     ValidLabels=to_categorical(ValidLabels_sparse)
 
 # =============================================================================
