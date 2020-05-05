@@ -35,7 +35,6 @@ import matplotlib.pyplot as plt
 import itertools
 from tensorflow.keras.applications.vgg16 import VGG16
 from sklearn.preprocessing import MultiLabelBinarizer
-from sklearn.model_selection import train_test_split
 # =============================================================================
 # =============================================================================
 
@@ -47,8 +46,6 @@ valid_path = 'D:\\SEE_ICE\\TileSize_50\\Valid5030'
 test_path = 'D:\\SEE_ICE\\TileSize_50\\Test5030'
 TileSize = 50
 training_epochs = 8
-ModelTuning = False #set to True if you need to tune the training epochs. Remember to lengthen the epochs
-TuningFigureName = 'Test'#name of the tuning figure, no need to add the path
 learning_rate = 0.0001
 verbosity = 1
 ModelOutputName = 'VGG16_3Bands_TL'  #where the model will be saved
@@ -143,6 +140,7 @@ model.add(layers.Dense(7, activation='softmax'))
 
 #LabelTensor.shape[1]
 #Freeze all or part of the convolutional base to keep imagenet weigths intact
+<<<<<<< HEAD
 #conv_base.trainable = False
 set_trainable = False
 for layer in conv_base.layers:
@@ -155,6 +153,19 @@ for layer in conv_base.layers:
         layer.trainable = False
 
          
+=======
+conv_base.trainable = True
+set_trainable = True
+#for layer in conv_base.layers:
+#    if (layer.name == 'block5_conv3') or (layer.name == 'block5_conv2') or (layer.name == 'block5_conv1'):# or (layer.name == 'block5_conv3'):
+#        set_trainable = True
+#    if set_trainable:
+#        layer.trainable = True
+#    else:
+#        layer.trainable = False
+
+model.summary()          
+>>>>>>> 82d094de9a41110e5cd3d6481b2a2f33f7870b7a
 
 #Tune an optimiser
 Optim = optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=True)
@@ -170,8 +181,9 @@ if ModelTuning:
 
 # =============================================================================
 
-""" TRAIN OR TUNE VGG16 MODEL """
+""" TRAIN FINE-TUNED VGG16 MODEL """
 
+<<<<<<< HEAD
 
 
 if ModelTuning:
@@ -208,6 +220,9 @@ if ModelTuning:
     
     sys.exit("Tuning Finished, adjust parameters and re-train the model") # stop the code if still in tuning phase.
 
+=======
+model.compile(Adam(lr=learning_rate), loss= 'categorical_crossentropy', metrics=['accuracy'])
+>>>>>>> 82d094de9a41110e5cd3d6481b2a2f33f7870b7a
 
 #To train the model - fits the model to our batches. Epochs should be number of images in training batches divided by number of batches
 model.fit(TrainTensor, TrainLabels,  batch_size=100, epochs=training_epochs, verbose=1)
