@@ -26,11 +26,10 @@ from tensorflow.keras.metrics import categorical_crossentropy
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.layers import BatchNormalization
 #from tensorflow.keras.layers.convolutional import *
-
+import sys
 from tensorflow.keras.layers import Conv2D
-
-
-from matplotlib import pyplot as plt
+import glob
+from skimage import io
 from sklearn import metrics
 import matplotlib.pyplot as plt
 import itertools
@@ -43,15 +42,16 @@ from sklearn.model_selection import train_test_split
 """USER INPUTS"""
 
 #Trained model and class key will also be written out to the training folder
-train_path = 'D:\CNN_Data\Train10030'
-valid_path = 'D:\CNN_Data\Valid10030'
-test_path = 'D:\CNN_Data\Test10030'
+train_path = 'D:\\SEE_ICE\\TileSize_50\\Train5030'
+valid_path = 'D:\\SEE_ICE\\TileSize_50\\Valid5030'
+test_path = 'D:\\SEE_ICE\\TileSize_50\\Test5030'
+TileSize = 50
 training_epochs = 8
 ModelTuning = False #set to True if you need to tune the training epochs. Remember to lengthen the epochs
 TuningFigureName = 'Test'#name of the tuning figure, no need to add the path
 learning_rate = 0.0001
 verbosity = 1
-ModelOutputName = 'VGG16_13ims'  #where the model will be saved
+ModelOutputName = 'VGG16_3Bands_TL'  #where the model will be saved
 
 #plots images with labels
 def plots(ims, figsize=(12,6), rows=1, interp=False, titles=None):
@@ -103,6 +103,24 @@ def plot_confusion_matrix(cm, classes,
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
     
+    
+def CompileTensor(path, size, Nbands):
+    MasterTensor = np.zeros((1,size,size,Nbands))
+    MasterLabels = np.zeros((1,1))
+    for c in range(1,8):
+        fullpath=path+'\\C'+str(c)
+        img = glob.glob(fullpath+"\\*.jpg")
+        tensor=np.zeros(((len(img),size,size,Nbands)))
+        labels=np.zeros((len(img),1))
+        for i in range(len(img)):
+            tensor[i,:,:,:]=io.imread(img[i])
+            labels[i]=c
+        MasterTensor=np.concatenate((MasterTensor,tensor), axis=0)
+        MasterLabels=np.concatenate((MasterLabels,labels), axis=0)
+    print('Processed class '+str(c))
+    return MasterTensor[1:,:,:,:], MasterLabels[1:,:]
+    
+    
 # =============================================================================
 # =============================================================================
 
@@ -112,7 +130,7 @@ def plot_confusion_matrix(cm, classes,
 """Convnet section"""
 ##########################################################
 #Setup the convnet and add dense layers for the big tile model
-conv_base = VGG16(weights='imagenet', include_top = False, input_shape = (100,100,3)) #used to be input_shape = (224,224,3)
+conv_base = VGG16(weights='imagenet', include_top = False, input_shape = (TileSize,TileSize,3)) #used to be input_shape = (224,224,3)
 conv_base.summary()
 model = models.Sequential()
 model.add(conv_base)
@@ -125,42 +143,41 @@ model.add(layers.Dense(7, activation='softmax'))
 
 #LabelTensor.shape[1]
 #Freeze all or part of the convolutional base to keep imagenet weigths intact
-# conv_base.trainable = False
-# set_trainable = True
-# for layer in conv_base.layers:
-#     if (layer.name == 'block5_conv3') or (layer.name == 'block5_conv2') or (layer.name == 'block5_conv1'):# or (layer.name == 'block5_conv3'):
-#         set_trainable = True
-#     if set_trainable:
-#         layer.trainable = True
-#     else:
-#         layer.trainable = False
+#conv_base.trainable = False
+set_trainable = False
+for layer in conv_base.layers:
+    print(layer.name)
+    if (layer.name == 'block5_conv3'):# or (layer.name == 'block5_conv2') or (layer.name == 'block5_conv1'):# or (layer.name == 'block5_conv3'):
+        set_trainable = True
+    if set_trainable:
+        layer.trainable = True
+    else:
+        layer.trainable = False
 
-model.summary()          
+         
 
 #Tune an optimiser
 Optim = optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=True)
+model.compile(Adam(lr=learning_rate), loss= 'categorical_crossentropy', metrics=['accuracy'])
+model.summary() 
+
 # =============================================================================
 
-""" SET DATA PATHS """
-
-train_batches = ImageDataGenerator().flow_from_directory(train_path, target_size=(100,100), classes=['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7'], batch_size=5) #all used to be target_size=(224,224)
-valid_batches = ImageDataGenerator().flow_from_directory(valid_path, target_size=(100,100), classes=['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7'], batch_size=5)
-test_batches = ImageDataGenerator().flow_from_directory(test_path, target_size=(100,100), classes=['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7'], batch_size=5, shuffle=False)
+""" Compile Tensors """
+TrainTensor, TrainLabels = CompileTensor(train_path, TileSize, 3)
+if ModelTuning:
+    ValidTensor, ValidLabels = CompileTensor(valid_path, TileSize, 3)
 
 # =============================================================================
 
 """ TRAIN OR TUNE VGG16 MODEL """
 
-model.compile(Adam(lr=learning_rate), loss= 'categorical_crossentropy', metrics=['accuracy'])
-
 
 
 if ModelTuning:
     #Split the data for tuning. Use a double pass of train_test_split to shave off some data
-    (trainX, testX, trainY, testY) = train_test_split(ImageTensor, LabelTensor, test_size=TuningSubSamp-0.001)
-    (Partiel_trainX, Partiel_testX, Partiel_trainY, Partiel_testY) = train_test_split(testX, testY, test_size=0.25)
-    del(ImageTensor, LabelTensor)
-    history = model.fit(Partiel_trainX, Partiel_trainY, epochs = training_epochs, batch_size = 75, validation_data = (Partiel_testX, Partiel_testY))
+
+    history = model.fit(TrainTensor, TrainLabels, epochs = training_epochs, batch_size = 75, validation_data = (ValidTensor, ValidLabels))
     #Plot the test results
     history_dict = history.history
     loss_values = history_dict['loss']
@@ -186,45 +203,16 @@ if ModelTuning:
     plt.ylabel('Accuracy')
     plt.legend()
     plt.show()
-    FigName = ScorePath + TuningFigureName
+    FigName = train_path + TuningFigureName
     plt.savefig(FigName, dpi=900)
     
     sys.exit("Tuning Finished, adjust parameters and re-train the model") # stop the code if still in tuning phase.
 
 
 #To train the model - fits the model to our batches. Epochs should be number of images in training batches divided by number of batches
-model.fit_generator(train_batches, steps_per_epoch=39560,
-                    validation_data=valid_batches, validation_steps=5606, epochs=training_epochs, verbose=verbosity)
+model.fit(TrainTensor, TrainLabels,  batch_size=100, epochs=training_epochs, verbose=1)
 
 # =============================================================================
-
-""" PREDICT USING FINE-TUNED VGG16 MODEL """
-
-#test_imgs, test_labels = next(test_batches)
-test_imgs, test_labels = next(test_batches)
-test_labels = test_batches.classes
-#plots(test_imgs)
-
-#mlb = MultiLabelBinarizer()
-#mlb_label_train = mlb.fit_transform(test_labels)
-
-#plots(test_imgs, titles=test_labels)
-
-predictions = model.predict_generator(test_batches, steps=11184, verbose=0)
-
-#cm = confusion_matrix(test_labels,np.round(predictions[:,6]))
-#
-#cm_plot_labels = ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7']
-#plot_confusion_matrix(cm, cm_plot_labels, title='Confusion Matrix')
-
-#Classification report
-
-observed = test_labels
-predicted = np.argmax(predictions, axis=1) #+1 to make the classes
-report = metrics.classification_report(observed, predicted, digits=3)
-print('VGG16 results')
-print('\n')
-print(report)
 
 
 # =============================================================================
