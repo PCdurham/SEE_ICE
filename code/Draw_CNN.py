@@ -48,16 +48,15 @@ and a classification report.
 """ USER INPUT """
 
 train_path = 'D:\\CNN_Data\\'
-Output_figure_path = 'D:\\VGG16_outputs224\\'
-ModelName = 'Train22432VGG16_22432stride13ims8eps' 
-Image_name = 'E:\\Masters\\Helheim19\\zh_26_05\\clip\\clip_26_05RGB.tif\\' #put entire path name with tiff of image used to show classification
+Output_figure_path = 'D:\\VGG16_TestOutputs\\Scoresby01_08_19\\'
+ModelName = 'Train4030VGG16_13ims8eps' 
+Image_name = 'E:\\Masters\\ScoresbySund19\\Sc01_08_19\\clip_Sc01_08_19RGBN.tif\\' #put entire path name with tiff of image used to show classification
 #example Image_name = 'E:\\Masters\\Helheim19\\zb_18_06\\clip\\clip_18_06RGB.tif\\' #put entire path name with tiff of image used to show classification
-Image_date = '26_05_19'
-Image_validation_raster = 'E:\\Masters\\Helheim19\\zh_26_05\\clip\\Train_26_05RGB.tif\\'
-size = 224
-stride = 224
+Image_date = '01_08_19 (5040)'
+Image_validation_raster = 'E:\\Masters\\ScoresbySund19\\Sc01_08_19\\clip_Sc01_08_19V.tif\\'
+size = 50
+stride = size
 NormFactor = 255 #Factor to scale the images to roughly 0-1
-
 
 # =============================================================================
 # =============================================================================
@@ -117,6 +116,15 @@ def classification_report_csv(report, filename):
     dataframe = pd.DataFrame.from_dict(report_data)
     dataframe.to_csv(filename, index = False) 
 # =============================================================================
+#fetches the overall avg F1 score from a classification report
+def GetF1(report):
+    lines = report.split('\n')
+    for line in lines[0:-1]:
+        if 'weighted' in line:
+            dat = line.split(' ')
+    
+    return dat[17]
+
 # =============================================================================
 
 # =============================================================================
@@ -168,41 +176,7 @@ predict = ConvNetmodel.predict(Tiles, verbose=1) #runs model on tiles - the dime
 class_raster = (class_prediction_to_image(im, predict, size))
 
 
-""" DISPLAY AND/OR OUTPUT FIGURE RESULTS """
-
-plt.figure(figsize = (20, 6)) #reduce these values if you have a small screen
-
-Im3D = np.int16(io.imread(Image_name))
-Im3D = np.int16(Im3D *0.0255) #change to maximum value in images - normalised between 0-255
-plt.subplot(1,2,1)
-plt.imshow(Im3D[:,:,0:3])
-plt.xlabel('Input RGB Image ('+str(Image_date) +')', fontweight='bold')
-
-plt.subplot(1,2,2)
-cmapCHM = colors.ListedColormap(['orange','gold','mediumturquoise','lightgrey', 'darkgrey','teal','darkslategrey'])
-plt.imshow(class_raster, cmap=cmapCHM)
-plt.xlabel('Output VGG16 Classification', fontweight='bold')
-
-#class0_box = mpatches.Patch(color='black', label='Unclassified')
-class1_box = mpatches.Patch(color='darkgrey', label='Snow on Ice')
-class2_box = mpatches.Patch(color='lightgrey', label='Glacier Ice')
-class3_box = mpatches.Patch(color='darkslategrey', label='Bedrock')
-class4_box = mpatches.Patch(color='teal', label='Snow on Bedrock')
-class5_box = mpatches.Patch(color='mediumturquoise', label='Mélange')
-class6_box = mpatches.Patch(color='gold', label='Ice-berg Water')
-class7_box = mpatches.Patch(color='orange', label='Open Water')
-
-ax=plt.gca()
-chartBox = ax.get_position()
-ax.set_position([chartBox.x0, chartBox.y0, chartBox.width, chartBox.height])  #chartBox.width*0.6 changed to just width
-ax.legend(loc='upper center', bbox_to_anchor=(1.13, 0.8), shadow=True, ncol=1, handles=[class1_box,class2_box,class3_box,class4_box,class5_box,class6_box,class7_box])
-
-
-""" SAVE FIGURE TO FOLDER """
-
-print('Saving output figure...')
-FigName = Output_figure_path + Image_date + ModelName + '.png'
-plt.savefig(FigName)
+# =============================================================================
 
 
 """ PRODUCE AND SAVE CLASSIFICATION REPORT """
@@ -226,6 +200,44 @@ CNNname = Output_figure_path + 'CNN_Report_'+ str(Image_date)+ '.csv'
 classification_report_csv(reportCNN, CNNname)
 
 # =============================================================================
+
+""" DISPLAY AND/OR OUTPUT FIGURE RESULTS """
+
+plt.figure(figsize = (20, 6)) #reduce these values if you have a small screen
+
+Im3D = np.int16(io.imread(Image_name))
+Im3D = np.int16(Im3D *0.0255) #change to maximum value in images - normalised between 0-255
+plt.subplot(1,2,1)
+plt.imshow(Im3D[:,:,0:3])
+plt.xlabel('Input RGB Image ('+str(Image_date) +')', fontweight='bold')
+
+plt.subplot(1,2,2)
+cmapCHM = colors.ListedColormap(['orange','gold','mediumturquoise','lightgrey', 'darkgrey','teal','darkslategrey'])
+plt.imshow(class_raster, cmap=cmapCHM)
+plt.xlabel('Output VGG16 Classification. F1: ' + GetF1(reportCNN), fontweight='bold')
+
+#class0_box = mpatches.Patch(color='black', label='Unclassified')
+class1_box = mpatches.Patch(color='darkgrey', label='Snow on Ice')
+class2_box = mpatches.Patch(color='lightgrey', label='Glacier Ice')
+class3_box = mpatches.Patch(color='darkslategrey', label='Bedrock')
+class4_box = mpatches.Patch(color='teal', label='Snow on Bedrock')
+class5_box = mpatches.Patch(color='mediumturquoise', label='Mélange')
+class6_box = mpatches.Patch(color='gold', label='Ice-berg Water')
+class7_box = mpatches.Patch(color='orange', label='Open Water')
+
+ax=plt.gca()
+chartBox = ax.get_position()
+ax.set_position([chartBox.x0, chartBox.y0, chartBox.width, chartBox.height])  #chartBox.width*0.6 changed to just width
+ax.legend(loc='upper center', bbox_to_anchor=(1.13, 0.8), shadow=True, ncol=1, handles=[class1_box,class2_box,class3_box,class4_box,class5_box,class6_box,class7_box])
+
+
+""" SAVE FIGURE TO FOLDER """
+
+print('Saving output figure...')
+FigName = Output_figure_path + Image_date + ModelName + '.png'
+plt.savefig(FigName)
+
+
 # =============================================================================
 
 
