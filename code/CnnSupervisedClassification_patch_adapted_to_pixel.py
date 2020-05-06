@@ -84,7 +84,7 @@ Experiment = 'VGG60_CSC_PatchSize1'    #ID to append to output performance files
 '''BASIC PARAMETER CHOICES'''
 UseSmote = False #Turn SMOTE-ENN resampling on and off
 TrainingEpochs = 25 #Typically this can be reduced
-Ndims = 3 # Feature Dimensions. 3 if just RGB, 4 will add a co-occurence entropy on 11x11 pixels.  There is NO evidence showing that this actually improves the outcomes. RGB is recommended.
+Ndims = 4 # Feature Dimensions. 3 if just RGB, 4 will add a co-occurence entropy on 11x11 pixels.  There is NO evidence showing that this actually improves the outcomes. RGB is recommended.
 SubSample = 1 #0-1 percentage of the CNN output to use in the MLP. 1 gives the published results.
 NClasses = 7  #The number of classes in the data. This MUST be the same as the classes used to retrain the model
 SaveClassRaster = False #If true this will save each class image to disk.  Outputs are not geocoded in this script. For GIS integration, see CnnSupervisedClassification_PyQGIS.py
@@ -96,7 +96,7 @@ OutDPI = 150 #Recommended 150 for inspection 1200 for papers.
 #to be inactive.  They are not used or discussed in the paper and poster associated to this code.
 MinTiles = 0 #The minimum number of contiguous tiles to consider as a significnat element in the image.  
 RecogThresh = 0 #minimum prob of the top-1 predictions to keep
-SmallestElement = 0 # Despeckle the classification to the smallest length in pixels of element remaining, just enter linear units (e.g. 3 for 3X3 pixels)
+SmallestElement = 1 # Despeckle the classification to the smallest length in pixels of element remaining, just enter linear units (e.g. 3 for 3X3 pixels)
 
 
 '''MODEL PARAMETERS''' #These would usually not be edited
@@ -336,7 +336,7 @@ def GetF1(report):
 
     # create model
 model = Sequential()
-model.add(Dense(128, input_shape=(1,1,4) kernel_regularizer= regularizers.l2(0.001), input_dim=Ndims, kernel_initializer='normal', activation='relu'))
+model.add(Dense(128, kernel_regularizer= regularizers.l2(0.001),input_dim=Ndims, kernel_initializer='normal', activation='relu'))
 model.add(Dense(128, kernel_regularizer= regularizers.l2(0.001), kernel_initializer='normal', activation='relu'))
 model.add(Dropout(0.5))
 model.add(Dense(32, kernel_regularizer= regularizers.l2(0.001), kernel_initializer='normal', activation='relu'))
@@ -406,6 +406,8 @@ for f,riv in enumerate(TestRiverTuple):
         I_tiles = split_image_to_tiles(ImCrop, size)
         #I_tiles = np.int16(I_tiles *0.0255) #change to maximum value in images - normalised
         I_tiles = np.int16(I_tiles)
+        I_tiles = np.squeeze(I_tiles)
+
         #I_tiles = np.int16(I_tiles) / 255
         
         ImCrop = None
@@ -446,7 +448,8 @@ for f,riv in enumerate(TestRiverTuple):
         PredictedTiles = None
         
         #Prep the pixel data into a tensor of patches
-        I_Stride1Tiles, Labels = slide_rasters_to_tiles(Im3D, PredictedClass0_6, Kernel_size) 
+        I_Stride1Tiles, Labels = slide_rasters_to_tiles(Im3D, PredictedClass0_6, Kernel_size)
+        I_Stride1Tiles = np.squeeze(I_Stride1Tiles)
         I_Stride1Tiles = np.int16(I_Stride1Tiles) #/ 255 already normalised
         Labels1Hot = to_categorical(Labels, num_classes=NClasses)
         PredictedClass0_6 = None
