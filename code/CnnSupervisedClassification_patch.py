@@ -514,7 +514,10 @@ for f,riv in enumerate(TestRiverTuple):
         classification_report_csv(reportSSC, CSCname)
 
         CNNname = ScorePath + 'CNN_' + os.path.basename(im)[:-4] + '_' + Experiment + '.csv'    
-        classification_report_csv(reportCNN, CNNname)            
+        classification_report_csv(reportCNN, CNNname)
+        DATname = ScorePath + 'OvPdat_' + TestRiverTuple[f] + format(i,'05d') +  '_' + Experiment     
+        DAT=np.concatenate((Class.reshape(-1,1), PredictedClassVECT.reshape(-1,1),PredictedImageVECT.reshape(-1,1)), axis=1)
+        np.savez_compressed(DATname,DAT)            
         
 # =============================================================================
         
