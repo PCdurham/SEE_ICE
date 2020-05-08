@@ -13,14 +13,15 @@ Created on Wed Jan 15 12:02:30 2020
 
 import numpy as np
 import skimage.io as IO
+
 import glob
 # =============================================================================
 
 """User Input"""
 
 
-ImFolder = 'E:\\Masters\\Helheim19\\zr_08_02\\clip\\' #location of image to be tiled
-DataFolder = 'D:\\CNN_Data\\' #folder location for output tiles
+ImFolder = 'E:\\See_Ice\\TrainData\\' #location of image to be tiled
+DataFolder = 'E:\\See_Ice\\debug\\' #folder location for output tiles
 size = 50 #size (in pixels) of output tiles
 stride = 25 #number of pixels the tiler slides before extracting another tile
 
@@ -67,52 +68,52 @@ def save_tile(I, LabelVector, CurrentTile, DataFolder, size, stride):
     TileName = 'T'+str(CurrentTile) + '.png'
     if PickFolder <= 0.8: #For distributing in train and test folders
         if LabelVector== 1:
-            IO.imsave(DataFolder+'Train'+str(size)+str(stride)+'\\C1\\'+TileName, I)
+            IO.imsave(DataFolder+'Train'+'\\C1\\'+TileName, I)
             I=np.flipud(I)
-            IO.imsave(DataFolder+'Train'+str(size)+str(stride)+'\\C1\\'+'R'+TileName, I)  
+            IO.imsave(DataFolder+'Train'+'\\C1\\'+'R'+TileName, I)  
         elif LabelVector== 2:
-            IO.imsave(DataFolder+'Train'+str(size)+str(stride)+'\\C2\\'+TileName, I)
+            IO.imsave(DataFolder+'Train'+'\\C2\\'+TileName, I)
             I=np.flipud(I)
-            IO.imsave(DataFolder+'Train'+str(size)+str(stride)+'\\C2\\'+'R'+TileName, I)  
+            IO.imsave(DataFolder+'Train'+'\\C2\\'+'R'+TileName, I)  
         elif LabelVector  == 3:
-            IO.imsave(DataFolder+'Train'+str(size)+str(stride)+'\\C3\\'+TileName, I)
+            IO.imsave(DataFolder+'Train'+'\\C3\\'+TileName, I)
 #            I=np.rot90(I, 2)
             I=np.flipud(I)
-            IO.imsave(DataFolder+'Train'+str(size)+str(stride)+'\\C3\\'+'R'+TileName, I)
+            IO.imsave(DataFolder+'Train'+'\\C3\\'+'R'+TileName, I)
         elif LabelVector  == 4:
-            IO.imsave(DataFolder+'Train'+str(size)+str(stride)+'\\C4\\'+TileName, I)
+            IO.imsave(DataFolder+'Train'+'\\C4\\'+TileName, I)
         elif LabelVector  == 5:
-            IO.imsave(DataFolder+'Train'+str(size)+str(stride)+'\\C5\\'+TileName, I)
+            IO.imsave(DataFolder+'Train'+'\\C5\\'+TileName, I)
         elif LabelVector  == 6:
-            IO.imsave(DataFolder+'Train'+str(size)+str(stride)+'\\C6\\'+TileName, I)
+            IO.imsave(DataFolder+'Train'+'\\C6\\'+TileName, I)
         elif LabelVector  == 7:
-            IO.imsave(DataFolder+'Train'+str(size)+str(stride)+'\\C7\\'+TileName, I)
+            IO.imsave(DataFolder+'Train'+'\\C7\\'+TileName, I)
             I=np.flipud(I)
-            IO.imsave(DataFolder+'Train'+str(size)+str(stride)+'\\C7\\'+'R'+TileName, I)
+            IO.imsave(DataFolder+'Train'+'\\C7\\'+'R'+TileName, I)
 
     elif (PickFolder > 0.8):
         if LabelVector  == 1:
-            IO.imsave(DataFolder+'Valid'+str(size)+str(stride)+'\\C1\\'+TileName, I)
+            IO.imsave(DataFolder+'Valid'+'\\C1\\'+TileName, I)
             I=np.flipud(I)
-            IO.imsave(DataFolder+'Valid'+str(size)+str(stride)+'\\C1\\'+'R'+TileName, I)
+            IO.imsave(DataFolder+'Valid'+'\\C1\\'+'R'+TileName, I)
         elif LabelVector  == 2:
-            IO.imsave(DataFolder+'Valid'+str(size)+str(stride)+'\\C2\\'+TileName, I)
+            IO.imsave(DataFolder+'Valid'+'\\C2\\'+TileName, I)
             I=np.flipud(I)
-            IO.imsave(DataFolder+'Valid'+str(size)+str(stride)+'\\C2\\'+'R'+TileName, I)
+            IO.imsave(DataFolder+'Valid'+'\\C2\\'+'R'+TileName, I)
         elif LabelVector  == 3:
-            IO.imsave(DataFolder+'Valid'+str(size)+str(stride)+'\\C3\\'+TileName, I)
+            IO.imsave(DataFolder+'Valid'+'\\C3\\'+TileName, I)
             I=np.flipud(I)
-            IO.imsave(DataFolder+'Valid'+str(size)+str(stride)+'\\C3\\'+'R'+TileName, I)
+            IO.imsave(DataFolder+'Valid'+'\\C3\\'+'R'+TileName, I)
         elif LabelVector  == 4:
-            IO.imsave(DataFolder+'Valid'+str(size)+str(stride)+'\\C4\\'+TileName, I)
+            IO.imsave(DataFolder+'Valid'+'\\C4\\'+TileName, I)
         elif LabelVector  == 5:
-            IO.imsave(DataFolder+'Valid'+str(size)+str(stride)+'\\C5\\'+TileName, I)
+            IO.imsave(DataFolder+'Valid'+'\\C5\\'+TileName, I)
         elif LabelVector  == 6:
-            IO.imsave(DataFolder+'Valid'+str(size)+str(stride)+'\\C6\\'+TileName, I)
+            IO.imsave(DataFolder+'Valid'+'\\C6\\'+TileName, I)
         elif LabelVector  == 7:
-            IO.imsave(DataFolder+'Valid'+str(size)+str(stride)+'\\C7\\'+TileName, I)
+            IO.imsave(DataFolder+'Valid'+'\\C7\\'+TileName, I)
             I=np.flipud(I)
-            IO.imsave(DataFolder+'Valid'+str(size)+str(stride)+'\\C7\\'+'R'+TileName, I)
+            IO.imsave(DataFolder+'Valid'+'\\C7\\'+'R'+TileName, I)
 
 
 ####################################################################################
@@ -126,7 +127,7 @@ for i in range(len(img)):
     #Load image
 
     ImName=img[i]
-    TrainName='Train_'+ImName[5:]
+    TrainName=ImFolder +'Train_'+ImName[-12:]
     Im3D = IO.imread(ImName)
     ClassRaster = IO.imread(TrainName)
     im = CropToTile (Im3D, size)
