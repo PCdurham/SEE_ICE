@@ -14,29 +14,18 @@ VGG16 model with 4 input bands, meant to be used with RGB+NIR imagery.  Note tha
 
 import numpy as np
 from tensorflow.keras import layers
-from tensorflow.keras import models
 from tensorflow.keras import optimizers
 from tensorflow.keras import regularizers
-from tensorflow.keras import backend as K
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Activation
-from tensorflow.keras.layers import Dense, Flatten, ZeroPadding2D, Convolution2D, MaxPooling2D, Dropout
+from tensorflow.keras.layers import Dense, Flatten, Convolution2D, MaxPooling2D, Dropout
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.metrics import categorical_crossentropy
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.layers import BatchNormalization
 from tensorflow.keras.utils import to_categorical
 #from tensorflow.keras.layers.convolutional import *
 import glob
-from tensorflow.keras.layers import Conv2D
 import random
 from skimage import io
 from matplotlib import pyplot as plt
-from sklearn import metrics
-import matplotlib.pyplot as plt
-import itertools
-from tensorflow.keras.applications.vgg16 import VGG16
-from sklearn.preprocessing import MultiLabelBinarizer
 import sys
 # =============================================================================
 # =============================================================================
