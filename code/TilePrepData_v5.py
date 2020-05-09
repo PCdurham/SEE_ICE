@@ -21,8 +21,8 @@ import glob
 
 
 ImFolder = 'E:\\See_Ice\\TrainData\\' #location of image to be tiled
-DataFolder = 'E:\\See_Ice\\debug\\' #folder location for output tiles
-size = 50 #size (in pixels) of output tiles
+DataFolder = 'E:\\See_Ice\\Tiles75\\' #folder location for output tiles
+size = 75 #size (in pixels) of output tiles
 stride = 25 #number of pixels the tiler slides before extracting another tile
 
 
@@ -42,7 +42,7 @@ def CheckLabel(ClassTile):
     vals, counts = np.unique(ClassTile, return_counts = True)
     if (vals[0] == 0) and (counts[0] > 0.1 * size**2): #if only 10% of the tile has a class
         Valid = False #This identifies the tile as non-classified (so it will reject it)
-    elif counts[np.argmax(counts)] >= 0.9 * size**2: #if biggest class is over 90% of area valid is True
+    elif counts[np.argmax(counts)] >= 0.95 * size**2: #if biggest class is over 90% of area valid is True
         Valid = True #This identifies the class of the tile 
     else:
         Valid = False #mix of classes that add up to 90% area
@@ -123,6 +123,7 @@ def save_tile(I, LabelVector, CurrentTile, DataFolder, size, stride):
 
 img = glob.glob(ImFolder + "clip*.*")
 #Tile sliding
+CurrentTile = 0
 for i in range(len(img)):
     #Load image
 
@@ -139,7 +140,7 @@ for i in range(len(img)):
     else:
         h, w, d = im.shape
     
-    CurrentTile = 0
+    
     for y in range(0, h-size, stride): #from first pixel to last pixel where 224 will fit, in steps of stride
         for x in range(0, w-size, stride):
             LabelTile = CroppedClassRaster[y:y+size,x:x+size] #Cropped class raster to tile size
