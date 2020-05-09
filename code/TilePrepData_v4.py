@@ -19,13 +19,13 @@ import sys
 
 """User Input"""
 
-ImName = 'Sc01_08_19RGBN.tif' #name of image to be tiled
-ClassName = 'Sc01_08_19V.tif' #name of class raster used to assign classes to tiles
-ImFolder = 'E:\\Masters\\ScoresbySund19\\Sc01_08_19\\' #location of image to be tiled
-DataFolder = 'D:\\S2_Images\\S2_Scoresby01_08_19\\' #folder location for output tiles
+ImName = 'H13_09_19RGBN.tif' #name of image to be tiled
+ClassName = 'H13_09_19V.tif' #name of class raster used to assign classes to tiles
+ImFolder = 'E:\\Masters\\Helheim19\\g_13_09\\' #location of image to be tiled
+DataFolder = 'D:\\S2_Images\\' #folder location for output tiles
 RootName = 'S2A'
 
-size = 1120 #size (in pixels) of output tiles
+size = 2240 #size (in pixels) of output tiles
 LastTile =0 #last tile number from previous image
 
 # =============================================================================
