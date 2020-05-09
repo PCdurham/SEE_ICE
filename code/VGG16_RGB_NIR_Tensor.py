@@ -27,35 +27,37 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.layers import BatchNormalization
 from tensorflow.keras.utils import to_categorical
 #from tensorflow.keras.layers.convolutional import *
-
+import glob
 from tensorflow.keras.layers import Conv2D
-
-
+import random
+from skimage import io
 from matplotlib import pyplot as plt
 from sklearn import metrics
 import matplotlib.pyplot as plt
 import itertools
 from tensorflow.keras.applications.vgg16 import VGG16
 from sklearn.preprocessing import MultiLabelBinarizer
+import sys
 # =============================================================================
 # =============================================================================
 
 """USER INPUTS"""
 
 #Trained model and class key will also be written out to the training folder
-train_path = 'F:\\SEE_ICE\\TileSize_50\\TileSize_50\\Train5030'
-valid_path = 'F:\\SEE_ICE\\TileSize_50\\TileSize_50\\Valid5030'
-test_path = 'F:\\SEE_ICE\\TileSize_50\\TileSize_50\\\Test5030'
-Tsize = 50
-Nbands=3
+train_path = 'E:\\See_Ice\\Tiles50\\Train'
+valid_path = 'E:\\See_Ice\\Tiles50\\Valid'
+test_path = 'G:\\SEE_ICE\\TileSize_50\\TileSize_50\\\Test'
+TileSize = 50
+Nbands=4
 Nclasses=7
 BaseFilters=32
-training_epochs = 7
+training_epochs = 10
+ImType='.png' #jpg or tif
 ModelTuning = False #set to True if you need to tune the training epochs. Remember to lengthen the epochs
-TuningFigureName = 'Tune_VGG16_3Bands_TL'#name of the tuning figure, no need to add the path
+TuningFigureName = 'Tune_VGG16_RGBNIR_75'#name of the tuning figure, no need to add the path
 learning_rate = 0.0001
 verbosity = 1
-ModelOutputName = 'VGG16_3Bands_TL'  #where the model will be saved
+ModelOutputName = 'VGG16_noise_RGBNIR_50'  #where the model will be saved
 
 #plots images with labels
 def plots(ims, figsize=(12,6), rows=1, interp=False, titles=None):
@@ -108,16 +110,21 @@ def plot_confusion_matrix(cm, classes,
     plt.xlabel('Predicted label')
 
 
-def CompileTensor(path, size, Nbands):
+def CompileTensor(path, size, Nbands, ImType):
     MasterTensor = np.zeros((1,size,size,Nbands))
     MasterLabels = np.zeros((1,1))
     for c in range(1,8):
         fullpath=path+'\\C'+str(c)
-        img = glob.glob(fullpath+"\\*.jpg")
+        img = glob.glob(fullpath+"\\*"+ImType)
+        if len(img)>10000:#maxes out total samples to 10k per class.  Improves balance.
+            random.seed(a=int(np.random.random((1))*42), version=2)
+            img=random.sample(img, 10000)
+            
         tensor=np.zeros(((len(img),size,size,Nbands)))
         labels=np.zeros((len(img),1))
         for i in range(len(img)):
-            tensor[i,:,:,:]=io.imread(img[i])/255
+            I=io.imread(img[i])/255
+            tensor[i,:,:,:]=I[:,:,0:Nbands]
             labels[i]=c
         MasterTensor=np.concatenate((MasterTensor,tensor), axis=0)
         MasterLabels=np.concatenate((MasterLabels,labels), axis=0)
@@ -135,7 +142,7 @@ def CompileTensor(path, size, Nbands):
 ##########################################################
 #Setup the convnet and add dense layers for the big tile model
 model = Sequential()
-model.add(Convolution2D(2*BaseFilters, 3, input_shape=(Tsize, Tsize, Nbands), data_format='channels_last', activation='relu', padding='same'))
+model.add(Convolution2D(2*BaseFilters, 3, input_shape=(TileSize, TileSize, Nbands), data_format='channels_last', activation='relu', padding='same'))
 model.add(Convolution2D(2*BaseFilters, 3, activation='relu', padding='same'))
 model.add(MaxPooling2D((2,2), strides=(2,2)))
 
@@ -162,9 +169,9 @@ model.add(Convolution2D(16*BaseFilters, 3, activation='relu', padding='same'))
 model.add(MaxPooling2D((2,2), strides=(2,2)))
 
 model.add(Flatten())
-model.add(Dense(512, activation='relu'))
+model.add(Dense(512, activation='relu',kernel_regularizer= regularizers.l2(0.001)))
 model.add(Dropout(0.5))
-model.add(Dense(256, activation='relu'))
+model.add(Dense(256, activation='relu',kernel_regularizer= regularizers.l2(0.001)))
 model.add(layers.Dense(Nclasses+1, activation='softmax'))
 
 
@@ -172,16 +179,16 @@ model.add(layers.Dense(Nclasses+1, activation='softmax'))
         
 
 #Tune an optimiser
-Optim = optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=True)
+Optim = optimizers.Adam(lr=learning_rate, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=True)
 model.compile(Adam(lr=learning_rate), loss= 'categorical_crossentropy', metrics=['accuracy'])
 model.summary()  
 # =============================================================================
 
 """ Compile Tensors """
-TrainTensor, TrainLabels_sparse = CompileTensor(train_path, TileSize, 3)
+TrainTensor, TrainLabels_sparse = CompileTensor(train_path, TileSize, Nbands, ImType)
 Trainlabels=to_categorical(TrainLabels_sparse)
 if ModelTuning:
-    ValidTensor, ValidLabels_sparse = CompileTensor(valid_path, TileSize, 3)
+    ValidTensor, ValidLabels_sparse = CompileTensor(valid_path, TileSize, Nbands, ImType)
     ValidLabels=to_categorical(ValidLabels_sparse)
 # =============================================================================
 
@@ -233,5 +240,7 @@ model.fit(TrainTensor, Trainlabels,  batch_size=50, epochs=training_epochs, verb
 """ SAVE THE MODEL """
 
 FullModelPath = train_path + ModelOutputName +'.h5'
-model.save(FullModelPath)============================================================================
+model.save(FullModelPath)
+
+#============================================================================
 
