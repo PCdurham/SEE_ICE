@@ -25,7 +25,7 @@ ImFolder = 'E:\\Masters\\Helheim19\\g_13_09\\' #location of image to be tiled
 DataFolder = 'D:\\S2_Images\\' #folder location for output tiles
 RootName = 'S2A'
 
-size = 1120 #size (in pixels) of output tiles
+size = 2240 #size (in pixels) of output tiles
 LastTile =0 #last tile number from previous image
 
 # =============================================================================
@@ -53,7 +53,7 @@ def CropToTile (Im, size):
 ###############################################################################
     #Save image tiles to disk based on their associated class 
 def save_tile(RasterTile, CurrentTile, DataFolder, RootName):
-    TileName = DataFolder+RootName+str(CurrentTile) + '.tif'
+    TileName = DataFolder+RootName+str(CurrentTile) + '.png'
     IO.imsave(TileName, RasterTile)
 
 
