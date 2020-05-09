@@ -23,7 +23,7 @@ import glob
 ImFolder = 'E:\\See_Ice\\TrainData\\' #location of image to be tiled
 DataFolder = 'E:\\See_Ice\\Tiles50\\' #folder location for output tiles
 size = 50 #size (in pixels) of output tiles
-stride = 40 #number of pixels the tiler slides before extracting another tile
+stride = 50 #number of pixels the tiler slides before extracting another tile
 
 
 # =============================================================================
@@ -69,89 +69,47 @@ def save_tile(I, LabelVector, CurrentTile, DataFolder, size, stride):
     if PickFolder <= 0.8: #For distributing in train and test folders
         if LabelVector== 1:
             IO.imsave(DataFolder+'Train'+'\\C1\\'+TileName, I)
-            I=np.rot90(I)+np.uint8(3*np.random.random(size=I.shape))
-            IO.imsave(DataFolder+'Train'+'\\C1\\'+'U'+TileName, I)
-            I=np.rot90(I)+np.uint8(3*np.random.random(size=I.shape))
-            IO.imsave(DataFolder+'Train'+'\\C1\\'+'L'+TileName, I)  
+
         elif LabelVector== 2:
             IO.imsave(DataFolder+'Train'+'\\C2\\'+TileName, I)
-            I=np.rot90(I)+np.uint8(3*np.random.random(size=I.shape))
-            IO.imsave(DataFolder+'Train'+'\\C2\\'+'U'+TileName, I)
-            I=np.rot90(I)+np.uint8(3*np.random.random(size=I.shape))
-            IO.imsave(DataFolder+'Train'+'\\C2\\'+'L'+TileName, I)   
+  
         elif LabelVector  == 3:
             IO.imsave(DataFolder+'Train'+'\\C3\\'+TileName, I)
-            I=np.rot90(I)+np.uint8(3*np.random.random(size=I.shape))
-            IO.imsave(DataFolder+'Train'+'\\C3\\'+'U'+TileName, I)
-            I=np.rot90(I)+np.uint8(3*np.random.random(size=I.shape))
-            IO.imsave(DataFolder+'Train'+'\\C3\\'+'L'+TileName, I)  
+
         elif LabelVector  == 4:
             IO.imsave(DataFolder+'Train'+'\\C4\\'+TileName, I)
-            I=np.rot90(I)+np.uint8(3*np.random.random(size=I.shape))
-            IO.imsave(DataFolder+'Train'+'\\C4\\'+'U'+TileName, I)
-            I=np.rot90(I)+np.uint8(3*np.random.random(size=I.shape))
-            IO.imsave(DataFolder+'Train'+'\\C4\\'+'L'+TileName, I)  
+
         elif LabelVector  == 5:
             IO.imsave(DataFolder+'Train'+'\\C5\\'+TileName, I)
-            I=np.rot90(I)+np.uint8(3*np.random.random(size=I.shape))
-            IO.imsave(DataFolder+'Train'+'\\C5\\'+'U'+TileName, I)
-            I=np.rot90(I)+np.uint8(3*np.random.random(size=I.shape))
-            IO.imsave(DataFolder+'Train'+'\\C5\\'+'L'+TileName, I)  
+ 
         elif LabelVector  == 6:
             IO.imsave(DataFolder+'Train'+'\\C6\\'+TileName, I)
-            I=np.rot90(I)+np.uint8(3*np.random.random(size=I.shape))
-            IO.imsave(DataFolder+'Train'+'\\C6\\'+'U'+TileName, I)
-            I=np.rot90(I)+np.uint8(3*np.random.random(size=I.shape))
-            IO.imsave(DataFolder+'Train'+'\\C6\\'+'L'+TileName, I)  
+
         elif LabelVector  == 7:
             IO.imsave(DataFolder+'Train'+'\\C7\\'+TileName, I)
-            I=np.rot90(I)+np.uint8(3*np.random.random(size=I.shape))
-            IO.imsave(DataFolder+'Train'+'\\C7\\'+'U'+TileName, I)
-            I=np.rot90(I)+np.uint8(3*np.random.random(size=I.shape))
-            IO.imsave(DataFolder+'Train'+'\\C7\\'+'L'+TileName, I)  
+
     elif (PickFolder > 0.8):
         if LabelVector  == 1:
             IO.imsave(DataFolder+'Valid'+'\\C1\\'+TileName, I)
-            I=np.rot90(I)+np.uint8(3*np.random.random(size=I.shape))
-            IO.imsave(DataFolder+'Valid'+'\\C1\\'+'U'+TileName, I)
-            I=np.rot90(I)+np.uint8(3*np.random.random(size=I.shape))
-            IO.imsave(DataFolder+'Valid'+'\\C1\\'+'L'+TileName, I)  
+ 
         elif LabelVector  == 2:
             IO.imsave(DataFolder+'Valid'+'\\C2\\'+TileName, I)
-            I=np.rot90(I)+np.uint8(3*np.random.random(size=I.shape))
-            IO.imsave(DataFolder+'Valid'+'\\C2\\'+'U'+TileName, I)
-            I=np.rot90(I)+np.uint8(3*np.random.random(size=I.shape))
-            IO.imsave(DataFolder+'Valid'+'\\C2\\'+'L'+TileName, I)  
+   
         elif LabelVector  == 3:
             IO.imsave(DataFolder+'Valid'+'\\C3\\'+TileName, I)
-            I=np.rot90(I)+np.uint8(3*np.random.random(size=I.shape))
-            IO.imsave(DataFolder+'Valid'+'\\C3\\'+'U'+TileName, I)
-            I=np.rot90(I)+np.uint8(3*np.random.random(size=I.shape))
-            IO.imsave(DataFolder+'Valid'+'\\C3\\'+'L'+TileName, I)  
+
         elif LabelVector  == 4:
             IO.imsave(DataFolder+'Valid'+'\\C4\\'+TileName, I)
-            I=np.rot90(I)+np.uint8(3*np.random.random(size=I.shape))
-            IO.imsave(DataFolder+'Valid'+'\\C4\\'+'U'+TileName, I)
-            I=np.rot90(I)+np.uint8(3*np.random.random(size=I.shape))
-            IO.imsave(DataFolder+'Valid'+'\\C4\\'+'L'+TileName, I)  
+ 
         elif LabelVector  == 5:
             IO.imsave(DataFolder+'Valid'+'\\C5\\'+TileName, I)
-            I=np.rot90(I)+np.uint8(3*np.random.random(size=I.shape))
-            IO.imsave(DataFolder+'Valid'+'\\C5\\'+'U'+TileName, I)
-            I=np.rot90(I)+np.uint8(3*np.random.random(size=I.shape))
-            IO.imsave(DataFolder+'Valid'+'\\C5\\'+'L'+TileName, I)  
+ 
         elif LabelVector  == 6:
             IO.imsave(DataFolder+'Valid'+'\\C6\\'+TileName, I)
-            I=np.rot90(I)+np.uint8(3*np.random.random(size=I.shape))
-            IO.imsave(DataFolder+'Valid'+'\\C6\\'+'U'+TileName, I)
-            I=np.rot90(I)+np.uint8(3*np.random.random(size=I.shape))
-            IO.imsave(DataFolder+'Valid'+'\\C6\\'+'L'+TileName, I)  
+ 
         elif LabelVector  == 7:
             IO.imsave(DataFolder+'Valid'+'\\C7\\'+TileName, I)
-            I=np.rot90(I)+np.uint8(3*np.random.random(size=I.shape))
-            IO.imsave(DataFolder+'Valid'+'\\C7\\'+'U'+TileName, I)
-            I=np.rot90(I)+np.uint8(3*np.random.random(size=I.shape))
-            IO.imsave(DataFolder+'Valid'+'\\C7\\'+'L'+TileName, I)  
+ 
 
 
 ####################################################################################
@@ -187,11 +145,25 @@ for i in range(len(img)):
             Tile = im[y:y+size,x:x+size,:].reshape(size,size,d) # image tile
             Tile = np.uint8(255*Tile/16384)
             if Valid:#==true i.e. if the tile has a dominant class assigned to it
-                save_tile(Tile, Label, CurrentTile, DataFolder, size, stride) #Save the tile to disk
+                #raw tile
+                I=Tile
+                save_tile(I, Label, CurrentTile, DataFolder, size, stride) #Save the tile to disk
                 CurrentTile+=1 #current tile plus 1 - so won't overwrite previously saved file
-                Tile=np.rot90(Tile) #rotates tile 90 degrees
-                save_tile(Tile, Label, CurrentTile, DataFolder, size, stride) #Save the tile to disk
+                #90 rotation + noise
+                Tile=np.rot90(Tile)
+                I=Tile+np.uint8(3*np.random.random(size=Tile.shape)) #rotates tile 90 degrees
+                save_tile(I, Label, CurrentTile, DataFolder, size, stride) #Save the tile to disk
                 CurrentTile+=1 #saves rotated tile and does not overwrite previously saved files
-                #save_tile(Tile, Label, CurrentTile, DataFolder, size, stride) #Save the tile to disk
+                #180 rotation + noise
+                Tile=np.rot90(Tile)
+                I=Tile+np.uint8(3*np.random.random(size=Tile.shape)) #rotates tile 90 degrees
+                save_tile(I, Label, CurrentTile, DataFolder, size, stride) #Save the tile to disk
+                CurrentTile+=1 #saves rotated tile and does not overwrite previously saved files
+               #270 rotation + noise
+                Tile=np.rot90(Tile)
+                I=Tile+np.uint8(3*np.random.random(size=Tile.shape)) #rotates tile 90 degrees
+                save_tile(I, Label, CurrentTile, DataFolder, size, stride) #Save the tile to disk
+                CurrentTile+=1 #saves rotated tile and does not overwrite previously saved files
+                
 
 
