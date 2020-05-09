@@ -48,12 +48,12 @@ and a classification report.
 """ USER INPUT """
 
 train_path = 'D:\\CNN_Data\\'
-Output_figure_path = 'D:\\VGG16_TestOutputs\\Scoresby01_08_19\\'
-ModelName = 'Train4030VGG16_13ims8eps' 
-Image_name = 'E:\\Masters\\ScoresbySund19\\Sc01_08_19\\clip_Sc01_08_19RGBN.tif\\' #put entire path name with tiff of image used to show classification
+Output_figure_path = 'D:\\VGG16_TestOutputs\\'
+ModelName = 'VGG16_noise_RGBNIR_50' 
+Image_name = 'E:\\Masters\\Helheim19\\f_16_09\\clip\\clip_16_09RGBN.tif\\' #put entire path name with tiff of image used to show classification
 #example Image_name = 'E:\\Masters\\Helheim19\\zb_18_06\\clip\\clip_18_06RGB.tif\\' #put entire path name with tiff of image used to show classification
-Image_date = '01_08_19 (5040)'
-Image_validation_raster = 'E:\\Masters\\ScoresbySund19\\Sc01_08_19\\clip_Sc01_08_19V.tif\\'
+Image_date = '16_09_19 (50 VGG16_noise_RGBNIR)'
+Image_validation_raster = 'E:\\Masters\\Helheim19\\f_16_09\\clip\\Train_16_09RGB.tif\\'
 size = 50
 stride = size
 NormFactor = 255 #Factor to scale the images to roughly 0-1
@@ -131,7 +131,7 @@ def GetF1(report):
 # Makes a bucket of zeros in the shape of a tensor and then puts each tile into its own slot in the tensor
     
 im = io.imread(Image_name)#reads in image and stored as im
-im = CropToTile (im[:,:,0:3], size) #indexed to remove NIR band im[:,:,0:3]
+im = CropToTile (im, size) #indexed to remove NIR band im[:,:,0:3]  im[:,:,0:3]
 nTiles_height = im.shape[0]//size
 nTiles_width = im.shape[1]//size
 Tiles = np.zeros((nTiles_height*nTiles_width, size, size, im.shape[2]))#creates a tensor of zeros based on the number of bands you are using
