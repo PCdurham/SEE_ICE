@@ -37,23 +37,24 @@ import itertools
 from tensorflow.keras.applications.vgg16 import VGG16
 from sklearn.preprocessing import MultiLabelBinarizer
 from sklearn.model_selection import train_test_split
+import random
 # =============================================================================
 # =============================================================================
 
 """USER INPUTS"""
 
 #Trained model and class key will also be written out to the training folder
-train_path = 'G:\\SEE_ICE\\TileSize_50\\TileSize_50\\Train5030'
-valid_path = 'G:\\SEE_ICE\\TileSize_50\\TileSize_50\\Valid5030'
-test_path = 'G:\\SEE_ICE\\TileSize_50\\TileSize_50\\\Test5030'
+train_path = 'E:\\See_Ice\\Tiles50\\Train'
+valid_path = 'E:\\See_Ice\\Tiles50\\Valid'
+test_path = 'G:\\SEE_ICE\\TileSize_50\\TileSize_50\\\Test'
 TileSize = 50
-training_epochs = 7
+training_epochs = 8
 ModelTuning = False #set to True if you need to tune the training epochs. Remember to lengthen the epochs
-TuningFigureName = 'Tune_VGG16_3Bands_TL'#name of the tuning figure, no need to add the path
+TuningFigureName = 'Tune_VGG16_RGB_TL'#name of the tuning figure, no need to add the path
 learning_rate = 0.0001
 verbosity = 1
-ModelOutputName = 'VGG16_3Bands_TL'  #where the model will be saved
-ImType='.jpg' #jpg or tif
+ModelOutputName = 'VGG16_RGB_TL'  #where the model will be saved
+ImType='.png' #jpg or tif
 Nbands=3 #can only be 3 if using this script with imagenet weights
 #plots images with labels
 def plots(ims, figsize=(12,6), rows=1, interp=False, titles=None):
@@ -112,6 +113,10 @@ def CompileTensor(path, size, Nbands, ImType):
     for c in range(1,8):
         fullpath=path+'\\C'+str(c)
         img = glob.glob(fullpath+"\\*"+ImType)
+        if len(img)>10000:#maxes out total samples to 10k per class.  Improves balance.
+            random.seed(a=int(np.random.random((1))*42), version=2)
+            img=random.sample(img, 10000)
+            
         tensor=np.zeros(((len(img),size,size,Nbands)))
         labels=np.zeros((len(img),1))
         for i in range(len(img)):
@@ -160,7 +165,6 @@ for layer in conv_base.layers:
          
 
 #Tune an optimiser
-Optim = optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=True)
 model.compile(Adam(lr=learning_rate), loss= 'categorical_crossentropy', metrics=['accuracy'])
 model.summary() 
 
@@ -170,7 +174,7 @@ model.summary()
 TrainTensor, TrainLabels_sparse = CompileTensor(train_path, TileSize, Nbands, ImType)
 Trainlabels=to_categorical(TrainLabels_sparse)
 if ModelTuning:
-    ValidTensor, ValidLabels_sparse = CompileTensor(valid_path, Nbands, ImType)
+    ValidTensor, ValidLabels_sparse = CompileTensor(valid_path, TileSize, Nbands, ImType)
     ValidLabels=to_categorical(ValidLabels_sparse)
 
 # =============================================================================
