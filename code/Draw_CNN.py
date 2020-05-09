@@ -50,10 +50,10 @@ and a classification report.
 train_path = 'D:\\CNN_Data\\'
 Output_figure_path = 'D:\\VGG16_TestOutputs\\'
 ModelName = 'VGG16_noise_RGBNIR_50' 
-Image_name = 'E:\\Masters\\Helheim19\\f_16_09\\clip\\clip_16_09RGBN.tif\\' #put entire path name with tiff of image used to show classification
+Image_name = 'D:\\S2_Images\\S2A6.png\\' #put entire path name with tiff of image used to show classification
 #example Image_name = 'E:\\Masters\\Helheim19\\zb_18_06\\clip\\clip_18_06RGB.tif\\' #put entire path name with tiff of image used to show classification
-Image_date = '16_09_19 (50 VGG16_noise_RGBNIR)'
-Image_validation_raster = 'E:\\Masters\\Helheim19\\f_16_09\\clip\\Train_16_09RGB.tif\\'
+Image_date = 'Helheim 13/09/19 (50 VGG16_noise_RGBNIR)'
+Image_validation_raster = 'D:\\S2_Images\\SCLS_S2A6.png\\'
 size = 50
 stride = size
 NormFactor = 255 #Factor to scale the images to roughly 0-1
@@ -83,7 +83,7 @@ def class_prediction_to_image(im, predictions, size):
             y1 = np.int32(y * size)
             x2 = np.int32(x1 + size)
             y2 = np.int32(y1 + size)
-            TileImage[y1:y2,x1:x2] = np.argmax(predictions[B,:])+1
+            TileImage[y1:y2,x1:x2] = np.argmax(predictions[B,:])
             B+=1
 
     return TileImage
@@ -206,7 +206,7 @@ classification_report_csv(reportCNN, CNNname)
 plt.figure(figsize = (20, 6)) #reduce these values if you have a small screen
 
 Im3D = np.int16(io.imread(Image_name))
-Im3D = np.int16(Im3D *0.0255) #change to maximum value in images - normalised between 0-255
+#Im3D = np.int16(Im3D *0.0255) #change to maximum value in images - normalised between 0-255
 plt.subplot(1,2,1)
 plt.imshow(Im3D[:,:,0:3])
 plt.xlabel('Input RGB Image ('+str(Image_date) +')', fontweight='bold')
