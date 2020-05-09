@@ -23,7 +23,7 @@ import glob
 ImFolder = 'E:\\See_Ice\\TrainData\\' #location of image to be tiled
 DataFolder = 'E:\\See_Ice\\Tiles50\\' #folder location for output tiles
 size = 50 #size (in pixels) of output tiles
-stride = 50 #number of pixels the tiler slides before extracting another tile
+stride = 30 #number of pixels the tiler slides before extracting another tile
 
 
 # =============================================================================
@@ -144,7 +144,7 @@ for i in range(len(img)):
             Valid = CheckLabel(LabelTile)
             Tile = im[y:y+size,x:x+size,:].reshape(size,size,d) # image tile
             Tile = np.uint8(255*Tile/16384)
-            if Valid:#==true i.e. if the tile has a dominant class assigned to it
+            if Valid & (np.sum(Tile.reshape(-1,1))!=0):#==true i.e. if the tile has a dominant class assigned to it
                 #raw tile
                 I=Tile
                 save_tile(I, Label, CurrentTile, DataFolder, size, stride) #Save the tile to disk
