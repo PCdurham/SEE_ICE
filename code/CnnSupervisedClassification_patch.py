@@ -77,18 +77,18 @@ import glob
 
 ModelName = 'VGG16_noise_RGBNIR_50'     #should be the model name from previous run of TrainCNN.py
 TrainPath = 'D:\\Tiles50_outputs\\'  
-PredictPath = 'D:\\S2_Images\\H13_09_19_600px\\'   #Location of the images
+PredictPath = 'D:\\S2_Images\\H13_09_19_900px\\'   #Location of the images
 ScorePath = 'D:\\S2_Images\\Test\\'      #location of the output files and the model
 Experiment = 'VGG_CSC_PatchSize15'    #ID to append to output performance files
 
 '''BASIC PARAMETER CHOICES'''
 UseSmote = False #Turn SMOTE-ENN resampling on and off
-TrainingEpochs = 5 #Typically this can be reduced
+TrainingEpochs = 25 #Typically this can be reduced
 Ndims = 4 # Feature Dimensions. 3 if just RGB, 4 will add a co-occurence entropy on 11x11 pixels.  There is NO evidence showing that this actually improves the outcomes. RGB is recommended.
 SubSample = 1 #0-1 percentage of the CNN output to use in the MLP. 1 gives the published results.
 NClasses = 7  #The number of classes in the data. This MUST be the same as the classes used to retrain the model
 SaveClassRaster = False #If true this will save each class image to disk.  Outputs are not geocoded in this script. For GIS integration, see CnnSupervisedClassification_PyQGIS.py
-DisplayHoldout =  True #Display the results figure which is saved to disk.  
+DisplayHoldout =  False #Display the results figure which is saved to disk.  
 OutDPI = 900 #Recommended 150 for inspection 1200 for papers.  
 
 '''FILTERING OPTIONS'''
@@ -390,7 +390,7 @@ class_img = glob.glob(PredictPath + "SCLS_S2A*.png")
 for f,riv in enumerate(TestRiverTuple):
     for i,im in enumerate(img): 
         print('CNN-supervised classification of ' + os.path.basename(im))
-        Im3D = np.int16(io.imread(im)) #        Im3D = np.int16(io.imread(im))
+        Im3D = np.int16(io.imread(im))
         #Im3D = io.imread(im)
         #print(isinstance(Im3D,uint8))
         if len(Im3D) == 2:
@@ -407,8 +407,8 @@ for f,riv in enumerate(TestRiverTuple):
         I_tiles = split_image_to_tiles(ImCrop, size)
         #I_tiles = np.int16(I_tiles *0.0255) #change to maximum value in images - normalised
         #I_tiles = np.int16(I_tiles)
-        I_tiles = (I_tiles) / 255
-#        I_tiles = np.int16(I_tiles)
+        I_tiles = np.int16(I_tiles) / 255
+        
         ImCrop = None
         
 # =============================================================================
@@ -448,8 +448,7 @@ for f,riv in enumerate(TestRiverTuple):
         
         #Prep the pixel data into a tensor of patches
         I_Stride1Tiles, Labels = slide_rasters_to_tiles(Im3D, PredictedClass, Kernel_size) 
-#        I_Stride1Tiles = (I_Stride1Tiles) / 255 #already normalised
-        I_Stride1Tiles = np.int16(I_Stride1Tiles) / 255 #already normalised
+        I_Stride1Tiles = np.int16(I_Stride1Tiles) #/ 255 already normalised
         Labels1Hot = to_categorical(Labels, num_classes=NClasses)
         PredictedClass0_6 = None
         Labels = None
