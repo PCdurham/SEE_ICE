@@ -338,11 +338,10 @@ def GetF1(report):
 model = Sequential()
 model.add(Conv2D(Filters,Kernel_size, data_format='channels_last', input_shape=Input_shape)) #model.add(Conv2D(16,5, data_format='channels_last', input_shape=(5,5,4)))
 model.add(Flatten())
-model.add(Dense(128, kernel_regularizer= regularizers.l2(0.001), kernel_initializer='normal', activation='relu'))
-model.add(Dense(128, kernel_regularizer= regularizers.l2(0.001), kernel_initializer='normal', activation='relu'))
-model.add(Dropout(0.5))
+model.add(Dense(64, kernel_regularizer= regularizers.l2(0.001), kernel_initializer='normal', activation='relu'))
+model.add(BatchNormalization(axis=-1, momentum=0.99, epsilon=0.001, center=True, scale=True, beta_initializer='zeros', gamma_initializer='ones', moving_mean_initializer='zeros', moving_variance_initializer='ones', beta_regularizer=None, gamma_regularizer=None, beta_constraint=None, gamma_constraint=None))
 model.add(Dense(32, kernel_regularizer= regularizers.l2(0.001), kernel_initializer='normal', activation='relu'))
-model.add(Dense(32, kernel_regularizer= regularizers.l2(0.001), kernel_initializer='normal', activation='relu'))
+model.add(Dense(16, kernel_regularizer= regularizers.l2(0.001), kernel_initializer='normal', activation='relu'))
 
 model.add(Dense(NClasses, kernel_initializer='normal', activation='softmax')) 
 
