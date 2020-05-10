@@ -15,28 +15,28 @@ VGG16 ATTEMPT 2
 import numpy as np
 from tensorflow.keras import layers
 from tensorflow.keras import models
-from tensorflow.keras import optimizers
+#from tensorflow.keras import optimizers
 from tensorflow.keras import regularizers
-from tensorflow.keras import backend as K
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Activation
-from tensorflow.keras.layers import Dense, Flatten
+#from tensorflow.keras import backend as K
+#from tensorflow.keras.models import Sequential
+#from tensorflow.keras.layers import Activation
+#from tensorflow.keras.layers import Dense, Flatten
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.metrics import categorical_crossentropy
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.layers import BatchNormalization
+#from tensorflow.keras.metrics import categorical_crossentropy
+#from tensorflow.keras.preprocessing.image import ImageDataGenerator
+#from tensorflow.keras.layers import BatchNormalization
 from tensorflow.keras.utils import to_categorical
 #from tensorflow.keras.layers.convolutional import *
 import sys
-from tensorflow.keras.layers import Conv2D
+#from tensorflow.keras.layers import Conv2D
 import glob
 from skimage import io
-from sklearn import metrics
+#from sklearn import metrics
 import matplotlib.pyplot as plt
-import itertools
+#import itertools
 from tensorflow.keras.applications.vgg16 import VGG16
-from sklearn.preprocessing import MultiLabelBinarizer
-from sklearn.model_selection import train_test_split
+#from sklearn.preprocessing import MultiLabelBinarizer
+#from sklearn.model_selection import train_test_split
 import random
 # =============================================================================
 # =============================================================================
@@ -44,67 +44,19 @@ import random
 """USER INPUTS"""
 
 #Trained model and class key will also be written out to the training folder
-train_path = 'E:\\See_Ice\\Tiles50\\Train'
-valid_path = 'E:\\See_Ice\\Tiles50\\Valid'
-test_path = 'G:\\SEE_ICE\\TileSize_50\\TileSize_50\\\Test'
-TileSize = 50
-training_epochs = 8
+train_path = 'E:\\See_Ice\\Tiles100\\Train'
+valid_path = 'E:\\See_Ice\\Tiles100\\Valid'
+#test_path = 'G:\\SEE_ICE\\TileSize_50\\TileSize_50\\\Test'
+TileSize = 100
+training_epochs = 6
 ModelTuning = False #set to True if you need to tune the training epochs. Remember to lengthen the epochs
-TuningFigureName = 'Tune_VGG16_RGB_TL'#name of the tuning figure, no need to add the path
+TuningFigureName = 'Tune_VGG16_noise_RGB_TL_75'#name of the tuning figure, no need to add the path
 learning_rate = 0.0001
 verbosity = 1
-ModelOutputName = 'VGG16_RGB_TL'  #where the model will be saved
-ImType='.png' #jpg or tif
+ModelOutputName = 'VGG16_noise_RGB_TL_75'  #where the model will be saved
+ImType='.png' #png, jpg or tif
 Nbands=3 #can only be 3 if using this script with imagenet weights
-#plots images with labels
-def plots(ims, figsize=(12,6), rows=1, interp=False, titles=None):
-    if type(ims[0]) is np.ndarray:
-        ims = np.array(ims).astype(np.uint8)
-        if (ims.shape[-1] != 3):
-            ims = ims.transpose((0,2,3,1))
-    f = plt.figure(figsize=figsize)
-    cols = len(ims)//rows if len(ims) % 2 == 0 else len(ims)//rows + 1
-    for i in range(len(ims)):
-        sp = f.add_subplot(rows, cols, i+1)
-        sp.axis('Off')
-        if titles is not None:
-            sp.set_title(titles[i], fontsize=16)
-        plt.imshow(ims[i], interpolation=None if interp else 'none')
 
-
-#plots confusion matrix
-def plot_confusion_matrix(cm, classes,
-                          normalize=False,
-                          title='Confusion matrix',
-                          cmap=plt.cm.Blues):
-    """
-    This function prints and plots the confusion matrix. 
-    Normalization can be applied by setting 'Normalization=True'.
-    """
-    plt.imshow(cm, interpolation='nearest', cmap=cmap)
-    plt.title(title)
-    plt.colorbar()
-    tick_marks = np.arange(len(classes))
-    plt.xticks(tick_marks, classes, rotation=45)
-    plt.yticks(tick_marks, classes)
-    
-    if normalize:
-        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-        print('Normalized confusion matrix')
-    else:
-        print('Confusion matrix, without normalization')
-    
-    print(cm)
-    
-    thresh = cm.max() / 2.
-    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-        plt.text(j, i, cm[i, j],
-                 horizontalalignment="center",
-                 color="white" if cm[i, j] > thresh else "black")
-        
-    plt.tight_layout()
-    plt.ylabel('True label')
-    plt.xlabel('Predicted label')
     
     
 def CompileTensor(path, size, Nbands, ImType):
