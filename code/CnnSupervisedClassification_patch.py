@@ -75,21 +75,21 @@ import glob
 
 """User data input. Fill in the info below before running"""
 
-ModelName = 'Train6030VGG16_13ims8eps'     #should be the model name from previous run of TrainCNN.py
+ModelName = 'VGG16_noise_RGBNIR_50'     #should be the model name from previous run of TrainCNN.py
 TrainPath = 'D:\\CNN_Data\\'  
-PredictPath = 'D:\\S2_Images\\'   #Location of the images
-ScorePath = 'D:\\S2_Images\\Results_pixel\\'      #location of the output files and the model
-Experiment = 'VGG60_CSC_PatchSize1'    #ID to append to output performance files
+PredictPath = 'D:\\S2_Images\\H13_09_19_900px\\'   #Location of the images
+ScorePath = 'D:\\S2_Images\\Test\\'      #location of the output files and the model
+Experiment = 'VGG_CSC_PatchSize15'    #ID to append to output performance files
 
 '''BASIC PARAMETER CHOICES'''
 UseSmote = False #Turn SMOTE-ENN resampling on and off
-TrainingEpochs = 25 #Typically this can be reduced
-Ndims = 3 # Feature Dimensions. 3 if just RGB, 4 will add a co-occurence entropy on 11x11 pixels.  There is NO evidence showing that this actually improves the outcomes. RGB is recommended.
+TrainingEpochs = 5 #Typically this can be reduced
+Ndims = 4 # Feature Dimensions. 3 if just RGB, 4 will add a co-occurence entropy on 11x11 pixels.  There is NO evidence showing that this actually improves the outcomes. RGB is recommended.
 SubSample = 1 #0-1 percentage of the CNN output to use in the MLP. 1 gives the published results.
 NClasses = 7  #The number of classes in the data. This MUST be the same as the classes used to retrain the model
 SaveClassRaster = False #If true this will save each class image to disk.  Outputs are not geocoded in this script. For GIS integration, see CnnSupervisedClassification_PyQGIS.py
-DisplayHoldout =  False #Display the results figure which is saved to disk.  
-OutDPI = 150 #Recommended 150 for inspection 1200 for papers.  
+DisplayHoldout =  True #Display the results figure which is saved to disk.  
+OutDPI = 900 #Recommended 150 for inspection 1200 for papers.  
 
 '''FILTERING OPTIONS'''
 #These parameters offer extra options to smooth the classification outputs.  By default they are set
@@ -111,7 +111,7 @@ Kernel_size = 1
 Input_shape = (1,1,4)
 #can change but has to be an odd number so there is always a centre pixel
 
-size = 60 #Do not edit. The base models supplied all assume a tile size of 50. #224
+size = 50 #Do not edit. The base models supplied all assume a tile size of 50. #224
 
 
 # Path checks- checks for folder ending slash, adds if nessesary
@@ -378,7 +378,7 @@ ConvNetmodel = load_model(FullModelPath)
 
 # Getting Names from the files
 # Glob list fo all jpg images, get unique names form the total list
-img = glob.glob(PredictPath+"S2A*.tif")
+img = glob.glob(PredictPath+"S2A*.png")
 
 TestRiverTuple = []
 for im in img:
@@ -386,7 +386,7 @@ for im in img:
 TestRiverTuple = np.unique(TestRiverTuple)
 
 # Get training class images (covers tif and tiff file types)
-class_img = glob.glob(PredictPath + "SCLS_S2A*.tif")
+class_img = glob.glob(PredictPath + "SCLS_S2A*.png")
 
 for f,riv in enumerate(TestRiverTuple):
     for i,im in enumerate(img): 
@@ -403,7 +403,7 @@ for f,riv in enumerate(TestRiverTuple):
         ClassIm = copy.deepcopy(Class)
         
         #Tile the images to run the convnet
-        ImCrop = CropToTile (Im3D[:,:,0:3], size)
+        ImCrop = CropToTile (Im3D, size) #(Im3D[:,:,0:3], size)
         #ImCrop = CropToTile (Im3D, size)
         I_tiles = split_image_to_tiles(ImCrop, size)
         #I_tiles = np.int16(I_tiles *0.0255) #change to maximum value in images - normalised
@@ -426,16 +426,16 @@ for f,riv in enumerate(TestRiverTuple):
         I_tiles = None
         
         #Correct the classes so they correspond to input validation labels (1-7)
-        PredictedTiles0_7 = np.insert(PredictedTiles, 0, values=PredictedTiles[:,0], axis=1)
+#        PredictedTiles0_7 = np.insert(PredictedTiles, 0, values=PredictedTiles[:,0], axis=1)
         #adds an extra column before the zero column (which is a exact replica of the 0 column)
         #so that predictions go from 0-7 instead 
         
         #Final output image for VGG classification:
-        PredictedClass = class_prediction_to_image(Class, PredictedTiles0_7, size)
+        PredictedClass = class_prediction_to_image(Class, PredictedTiles, size)
         #So now we have a class image of the VGG output with classes corresponding to indices
         #Zero column is removed later
         
-        PredictedTiles0_7 = None
+#        PredictedTiles0_7 = None
         
         #PredictedClass = SimplifyClass(PredictedClass, ClassKey)
 
@@ -443,12 +443,12 @@ for f,riv in enumerate(TestRiverTuple):
         
         """ APPLY THE PATCH CNN USING SAME CLASS SYSTEM """
         
-        PredictedClass0_6 = class_prediction_to_image(Class, PredictedTiles, size)
+#        PredictedClass0_6 = class_prediction_to_image(Class, PredictedTiles, size)
         #needed so the CSC CNN uses the same class system as VGG  
         PredictedTiles = None
         
         #Prep the pixel data into a tensor of patches
-        I_Stride1Tiles, Labels = slide_rasters_to_tiles(Im3D, PredictedClass0_6, Kernel_size) 
+        I_Stride1Tiles, Labels = slide_rasters_to_tiles(Im3D, PredictedClass, Kernel_size) 
         I_Stride1Tiles = np.int16(I_Stride1Tiles) #/ 255 already normalised
         Labels1Hot = to_categorical(Labels, num_classes=NClasses)
         PredictedClass0_6 = None
@@ -464,7 +464,7 @@ for f,riv in enumerate(TestRiverTuple):
         I_Stride1Tiles = None
         Labels1Hot = None
 
-        Predicted = np.argmax(Predicted, axis=1)+1 
+        Predicted = np.argmax(Predicted, axis=1) #+1
         #the +1 means that the classes now correspond to their indices.
         
         #Reshape the predictions to image format and display
