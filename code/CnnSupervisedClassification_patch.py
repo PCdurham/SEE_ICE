@@ -78,10 +78,13 @@ import glob
 ModelName = 'VGG16_noise_RGBNIR_50'     #should be the model name from previous run of TrainCNN.py
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 TrainPath = 'D:\\See_Ice\\'  
 PredictPath = 'D:\\See_Ice\\H29_05_19\\'   #Location of the images
 ScorePath = 'D:\\'      #location of the output files and the model
 =======
+=======
+>>>>>>> parent of 2c5fd77... Update CnnSupervisedClassification_patch.py
 =======
 >>>>>>> parent of 2c5fd77... Update CnnSupervisedClassification_patch.py
 TrainPath = 'D:\\CNN_Data\\'  
