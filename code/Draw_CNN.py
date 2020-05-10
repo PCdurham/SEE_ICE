@@ -8,31 +8,10 @@ Created on Tue Feb  4 15:25:48 2020
 """ IMPORTS """
 
 import numpy as np
-from tensorflow.keras import layers
-from tensorflow.keras import models
-from tensorflow.keras import optimizers
-from tensorflow.keras import regularizers
-from tensorflow.keras import backend as K
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Activation
-from tensorflow.keras.layers import Dense, Flatten
-from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.metrics import categorical_crossentropy
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.layers import BatchNormalization
-#from tensorflow.keras.layers.convolutional import *
-from tensorflow.keras.layers import Conv2D
-
 import skimage.transform as T
-import os.path
 import pandas as pd
-
 from matplotlib import pyplot as plt
-import seaborn as sns
 from sklearn import metrics
-import itertools
-from tensorflow.keras.applications.vgg16 import VGG16
-from sklearn.preprocessing import MultiLabelBinarizer
 import skimage.io as io
 from tensorflow.keras.models import load_model
 import matplotlib.colors as colors
@@ -48,12 +27,12 @@ and a classification report.
 """ USER INPUT """
 
 train_path = 'D:\\CNN_Data\\'
-Output_figure_path = 'D:\\VGG16_TestOutputs\\'
+Output_figure_path = 'D:\\NewVGG16_outputsTest\\Scoresby\\'
 ModelName = 'VGG16_noise_RGBNIR_50' 
-Image_name = 'E:\\Masters\\Helheim19\\f_16_09\\clip\\clip_16_09RGBN.tif\\' #put entire path name with tiff of image used to show classification
+Image_name = 'D:\\S2_Images\\S2A1.png\\' #put entire path name with tiff of image used to show classification
 #example Image_name = 'E:\\Masters\\Helheim19\\zb_18_06\\clip\\clip_18_06RGB.tif\\' #put entire path name with tiff of image used to show classification
-Image_date = '16_09_19 (50 VGG16_noise_RGBNIR)'
-Image_validation_raster = 'E:\\Masters\\Helheim19\\f_16_09\\clip\\Train_16_09RGB.tif\\'
+Image_validation_raster = 'D:\\S2_Images\\SCLS_S2A1.png\\'
+Image_date = '01-08-2019'
 size = 50
 stride = size
 NormFactor = 255 #Factor to scale the images to roughly 0-1
@@ -83,7 +62,7 @@ def class_prediction_to_image(im, predictions, size):
             y1 = np.int32(y * size)
             x2 = np.int32(x1 + size)
             y2 = np.int32(y1 + size)
-            TileImage[y1:y2,x1:x2] = np.argmax(predictions[B,:])+1
+            TileImage[y1:y2,x1:x2] = np.argmax(predictions[B,:])
             B+=1
 
     return TileImage
@@ -102,16 +81,27 @@ def CropToTile (Im, size):
 #Save classification reports to csv with Pandas
 def classification_report_csv(report, filename):
     report_data = []
-    lines = report.split('\n')
-    for line in lines[2:-5]:
+    report = report.replace('avg', "")
+    report = report.replace('accuracy', "Accuracy")
+    report = report.replace('macro', "Macro_avg")
+    report = report.replace('weighted', "Weighted_avg")
+    
+    lines = report.split("\n")
+    no_empty_lines = [line for line in lines if line.strip()]
+        
+    for line in no_empty_lines[1:]:
         row = {}
-        row_data = line.split(' ') 
+        row_data = line.split(' ')
         row_data = list(filter(None, row_data))
-        row['class'] = row_data[0]
-        row['precision'] = float(row_data[1])
-        row['recall'] = float(row_data[2])
-        row['f1_score'] = float(row_data[3])
-        row['support'] = float(row_data[4])
+        if 'Accuracy' in line:
+            row_data.insert(1, 'NaN')
+            row_data.insert(2, 'NaN')
+            
+        row['Class'] = row_data[0]
+        row['Precision'] = (row_data[1])
+        row['Recall'] = (row_data[2])
+        row['F1_score'] = float(row_data[3])
+        row['Support'] = float(row_data[4])
         report_data.append(row)
     dataframe = pd.DataFrame.from_dict(report_data)
     dataframe.to_csv(filename, index = False) 
@@ -196,7 +186,7 @@ reportCNN = metrics.classification_report(Class, PredictedClassVECT, digits = 3)
 print(reportCNN)
 
 #saves classification report to results folder as a csv. file 
-CNNname = Output_figure_path + 'CNN_Report_'+ str(Image_date)+ '.csv'   
+CNNname = Output_figure_path + 'CNN_Report_'+ str(Image_date)+str(ModelName)+ '.csv'   
 classification_report_csv(reportCNN, CNNname)
 
 # =============================================================================
@@ -204,19 +194,28 @@ classification_report_csv(reportCNN, CNNname)
 """ DISPLAY AND/OR OUTPUT FIGURE RESULTS """
 
 plt.figure(figsize = (20, 6)) #reduce these values if you have a small screen
+cmapCHM = colors.ListedColormap(['orange','gold','mediumturquoise','lightgrey', 'darkgrey','teal','darkslategrey'])
 
 Im3D = np.int16(io.imread(Image_name))
-Im3D = np.int16(Im3D *0.0255) #change to maximum value in images - normalised between 0-255
-plt.subplot(1,2,1)
+#Im3D = np.int16(Im3D *0.0255) #change to maximum value in images - normalised between 0-255
+plt.subplot(1,3,1)
 plt.imshow(Im3D[:,:,0:3])
 plt.xlabel('Input RGB Image ('+str(Image_date) +')', fontweight='bold')
 
-plt.subplot(1,2,2)
-cmapCHM = colors.ListedColormap(['orange','gold','mediumturquoise','lightgrey', 'darkgrey','teal','darkslategrey'])
+plt.subplot(1,3,2)
+#cmapCHM = colors.ListedColormap(['black','orange','gold','mediumturquoise','lightgrey', 'darkgrey','teal','darkslategrey'])
 plt.imshow(class_raster, cmap=cmapCHM)
-plt.xlabel('Output VGG16 Classification. F1: ' + GetF1(reportCNN), fontweight='bold')
+plt.xlabel('Output VGG16 Classification - F1: ' + GetF1(reportCNN), fontweight='bold')
 
-#class0_box = mpatches.Patch(color='black', label='Unclassified')
+
+plt.subplot(1,3,3)
+cmapCHM = colors.ListedColormap(['black','orange','gold','teal','mediumturquoise','darkslategrey','lightgrey', 'darkgrey'])
+Validation_Raster = np.int16(io.imread(Image_validation_raster))
+plt.imshow(Validation_Raster, cmap=cmapCHM)
+plt.xlabel('Validation Labels', fontweight='bold')
+
+
+class0_box = mpatches.Patch(color='black', label='Unclassified')
 class1_box = mpatches.Patch(color='darkgrey', label='Snow on Ice')
 class2_box = mpatches.Patch(color='lightgrey', label='Glacier Ice')
 class3_box = mpatches.Patch(color='darkslategrey', label='Bedrock')
@@ -225,17 +224,18 @@ class5_box = mpatches.Patch(color='mediumturquoise', label='Mélange')
 class6_box = mpatches.Patch(color='gold', label='Ice-berg Water')
 class7_box = mpatches.Patch(color='orange', label='Open Water')
 
+
 ax=plt.gca()
 chartBox = ax.get_position()
 ax.set_position([chartBox.x0, chartBox.y0, chartBox.width, chartBox.height])  #chartBox.width*0.6 changed to just width
-ax.legend(loc='upper center', bbox_to_anchor=(1.13, 0.8), shadow=True, ncol=1, handles=[class1_box,class2_box,class3_box,class4_box,class5_box,class6_box,class7_box])
+ax.legend(loc='upper center', bbox_to_anchor=(1.3, 1), shadow=True, ncol=1, handles=[class0_box,class1_box,class2_box,class3_box,class4_box,class5_box,class6_box,class7_box])
 
 
 """ SAVE FIGURE TO FOLDER """
 
 print('Saving output figure...')
 FigName = Output_figure_path + Image_date + ModelName + '.png'
-plt.savefig(FigName)
+plt.savefig(FigName, bbox_inches='tight')
 
 
 # =============================================================================
