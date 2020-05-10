@@ -76,9 +76,9 @@ import glob
 """User data input. Fill in the info below before running"""
 
 ModelName = 'VGG16_noise_RGBNIR_50'     #should be the model name from previous run of TrainCNN.py
-TrainPath = 'D:\\Tiles50_outputs\\'  
-PredictPath = 'D:\\S2_Images\\H13_09_19_900px\\'   #Location of the images
-ScorePath = 'D:\\S2_Images\\Test\\'      #location of the output files and the model
+TrainPath = 'D:\\See_Ice\\'  
+PredictPath = 'D:\\See_Ice\\H29_05_19\\'   #Location of the images
+ScorePath = 'D:\\'      #location of the output files and the model
 Experiment = 'VGG_CSC_PatchSize15'    #ID to append to output performance files
 
 '''BASIC PARAMETER CHOICES'''
@@ -377,7 +377,7 @@ ConvNetmodel = load_model(FullModelPath)
 
 # Getting Names from the files
 # Glob list fo all jpg images, get unique names form the total list
-img = glob.glob(PredictPath+"S2A*.png")
+img = glob.glob(PredictPath+'*.tif')#+"S2A*.png")
 
 TestRiverTuple = []
 for im in img:
@@ -385,7 +385,7 @@ for im in img:
 TestRiverTuple = np.unique(TestRiverTuple)
 
 # Get training class images (covers tif and tiff file types)
-class_img = glob.glob(PredictPath + "SCLS_S2A*.png")
+class_img = glob.glob(PredictPath + 'Train*.tif')#"SCLS_S2A*.png")
 
 for f,riv in enumerate(TestRiverTuple):
     for i,im in enumerate(img): 
