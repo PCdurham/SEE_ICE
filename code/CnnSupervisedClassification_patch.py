@@ -391,7 +391,7 @@ for f,riv in enumerate(TestRiverTuple):
     for i,im in enumerate(img): 
         print('CNN-supervised classification of ' + os.path.basename(im))
         Im3D = np.int16(io.imread(im))
-        #Im3D = io.imread(im)
+        #Im3D = io.imread(im)#
         #print(isinstance(Im3D,uint8))
         if len(Im3D) == 2:
             Im3D = Im3D[0]
