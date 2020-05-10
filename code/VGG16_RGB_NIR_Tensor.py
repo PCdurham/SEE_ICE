@@ -19,13 +19,13 @@ from tensorflow.keras import regularizers
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Flatten, Convolution2D, MaxPooling2D, Dropout
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.metrics import categorical_crossentropy
+#from tensorflow.keras.metrics import categorical_crossentropy
 from tensorflow.keras.utils import to_categorical
 #from tensorflow.keras.layers.convolutional import *
 import glob
 import random
 from skimage import io
-from matplotlib import pyplot as plt
+#from matplotlib import pyplot as plt
 import sys
 # =============================================================================
 # =============================================================================
@@ -33,70 +33,22 @@ import sys
 """USER INPUTS"""
 
 #Trained model and class key will also be written out to the training folder
-train_path = 'E:\\See_Ice\\Tiles50\\Train'
-valid_path = 'E:\\See_Ice\\Tiles50\\Valid'
-test_path = 'G:\\SEE_ICE\\TileSize_50\\TileSize_50\\\Test'
-TileSize = 50
-Nbands=4
+train_path = 'E:\\See_Ice\\Tiles100\\Train'
+valid_path = 'E:\\See_Ice\\Tiles100\\Valid'
+#test_path = 'G:\\SEE_ICE\\TileSize_50\\TileSize_50\\\Test'
+TileSize = 100
+Nbands=3
 Nclasses=7
 BaseFilters=32
-training_epochs = 10
+training_epochs = 15
 ImType='.png' #jpg or tif
 ModelTuning = False #set to True if you need to tune the training epochs. Remember to lengthen the epochs
-TuningFigureName = 'Tune_VGG16_RGBNIR_75'#name of the tuning figure, no need to add the path
+TuningFigureName = 'Tune_VGG16_noise_RGB_75'#name of the tuning figure, no need to add the path
 learning_rate = 0.0001
 verbosity = 1
-ModelOutputName = 'VGG16_noise_RGBNIR_50'  #where the model will be saved
+ModelOutputName = 'VGG16_noise_RGB_100'  #where the model will be saved
 
 #plots images with labels
-def plots(ims, figsize=(12,6), rows=1, interp=False, titles=None):
-    if type(ims[0]) is np.ndarray:
-        ims = np.array(ims).astype(np.uint8)
-        if (ims.shape[-1] != 3):
-            ims = ims.transpose((0,2,3,1))
-    f = plt.figure(figsize=figsize)
-    cols = len(ims)//rows if len(ims) % 2 == 0 else len(ims)//rows + 1
-    for i in range(len(ims)):
-        sp = f.add_subplot(rows, cols, i+1)
-        sp.axis('Off')
-        if titles is not None:
-            sp.set_title(titles[i], fontsize=16)
-        plt.imshow(ims[i], interpolation=None if interp else 'none')
-
-
-#plots confusion matrix
-def plot_confusion_matrix(cm, classes,
-                          normalize=False,
-                          title='Confusion matrix',
-                          cmap=plt.cm.Blues):
-    """
-    This function prints and plots the confusion matrix. 
-    Normalization can be applied by setting 'Normalization=True'.
-    """
-    plt.imshow(cm, interpolation='nearest', cmap=cmap)
-    plt.title(title)
-    plt.colorbar()
-    tick_marks = np.arange(len(classes))
-    plt.xticks(tick_marks, classes, rotation=45)
-    plt.yticks(tick_marks, classes)
-    
-    if normalize:
-        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-        print('Normalized confusion matrix')
-    else:
-        print('Confusion matrix, without normalization')
-    
-    print(cm)
-    
-    thresh = cm.max() / 2.
-    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-        plt.text(j, i, cm[i, j],
-                 horizontalalignment="center",
-                 color="white" if cm[i, j] > thresh else "black")
-        
-    plt.tight_layout()
-    plt.ylabel('True label')
-    plt.xlabel('Predicted label')
 
 
 def CompileTensor(path, size, Nbands, ImType):

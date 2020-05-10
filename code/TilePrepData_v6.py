@@ -21,9 +21,9 @@ import glob
 
 
 ImFolder = 'E:\\See_Ice\\TrainData\\' #location of image to be tiled
-DataFolder = 'E:\\See_Ice\\Tiles50\\' #folder location for output tiles
-size = 50 #size (in pixels) of output tiles
-stride = 30 #number of pixels the tiler slides before extracting another tile
+DataFolder = 'E:\\See_Ice\\Tiles100\\' #folder location for output tiles
+size = 100 #size (in pixels) of output tiles
+stride = 35 #number of pixels the tiler slides before extracting another tile
 
 
 # =============================================================================
@@ -42,7 +42,7 @@ def CheckLabel(ClassTile):
     vals, counts = np.unique(ClassTile, return_counts = True)
     if (vals[0] == 0) and (counts[0] > 0.1 * size**2): #if only 10% of the tile has a class
         Valid = False #This identifies the tile as non-classified (so it will reject it)
-    elif counts[np.argmax(counts)] >= 0.95 * size**2: #if biggest class is over 90% of area valid is True
+    elif counts[np.argmax(counts)] >= 0.95 * size**2: #if biggest class is over 95% of area valid is True
         Valid = True #This identifies the class of the tile 
     else:
         Valid = False #mix of classes that add up to 90% area
@@ -66,7 +66,7 @@ def CropToTile (Im, size):
 def save_tile(I, LabelVector, CurrentTile, DataFolder, size, stride):
     PickFolder = np.random.uniform() #Picks a random number to allocate isolated tiles to folder (uniform between 0 and 1)
     TileName = 'T'+str(CurrentTile) + '.png'
-    if PickFolder <= 0.8: #For distributing in train and test folders
+    if PickFolder <= 0.95: #For distributing in train and test folders
         if LabelVector== 1:
             IO.imsave(DataFolder+'Train'+'\\C1\\'+TileName, I)
 
@@ -88,7 +88,7 @@ def save_tile(I, LabelVector, CurrentTile, DataFolder, size, stride):
         elif LabelVector  == 7:
             IO.imsave(DataFolder+'Train'+'\\C7\\'+TileName, I)
 
-    elif (PickFolder > 0.8):
+    elif (PickFolder > 0.95):
         if LabelVector  == 1:
             IO.imsave(DataFolder+'Valid'+'\\C1\\'+TileName, I)
  
@@ -144,24 +144,24 @@ for i in range(len(img)):
             Valid = CheckLabel(LabelTile)
             Tile = im[y:y+size,x:x+size,:].reshape(size,size,d) # image tile
             Tile = np.uint8(255*Tile/16384)
-            if Valid & (np.sum(Tile.reshape(-1,1))!=0):#==true i.e. if the tile has a dominant class assigned to it
+            if Valid: #==true i.e. if the tile has a dominant class assigned to it
                 #raw tile
                 I=Tile
                 save_tile(I, Label, CurrentTile, DataFolder, size, stride) #Save the tile to disk
                 CurrentTile+=1 #current tile plus 1 - so won't overwrite previously saved file
                 #90 rotation + noise
                 Tile=np.rot90(Tile)
-                I=Tile+np.uint8(3*np.random.random(size=Tile.shape)) #rotates tile 90 degrees
+                I=Tile+np.uint8(3*np.random.uniform(size=Tile.shape)) #rotates tile 90 degrees + noise from 0-2
                 save_tile(I, Label, CurrentTile, DataFolder, size, stride) #Save the tile to disk
                 CurrentTile+=1 #saves rotated tile and does not overwrite previously saved files
                 #180 rotation + noise
                 Tile=np.rot90(Tile)
-                I=Tile+np.uint8(3*np.random.random(size=Tile.shape)) #rotates tile 90 degrees
+                I=Tile+np.uint8(3*np.random.uniform(size=Tile.shape)) #rotates tile 90 degrees+ noise from 0-2
                 save_tile(I, Label, CurrentTile, DataFolder, size, stride) #Save the tile to disk
                 CurrentTile+=1 #saves rotated tile and does not overwrite previously saved files
                #270 rotation + noise
                 Tile=np.rot90(Tile)
-                I=Tile+np.uint8(3*np.random.random(size=Tile.shape)) #rotates tile 90 degrees
+                I=Tile+np.uint8(3*np.random.uniform(size=Tile.shape)) #rotates tile 90 degrees+ noise from 0-2
                 save_tile(I, Label, CurrentTile, DataFolder, size, stride) #Save the tile to disk
                 CurrentTile+=1 #saves rotated tile and does not overwrite previously saved files
                 
