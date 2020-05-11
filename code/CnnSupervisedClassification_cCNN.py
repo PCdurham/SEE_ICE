@@ -362,10 +362,10 @@ def TuneModelEpochs(Tiles,Labels, model,TuningDataName,Path):
 
 ###############################################################################
     
-""" INSTANTIATE THE CNN PATCH PIXEL-BASED CLASSIFIER """ 
+""" INSTANTIATE THE cCNN or MLP CLASSIFIER """ 
    
 
-# define the patch CNN model with L2 regularization and batch normalisation
+
 if Kernel_size>1:
     # create cCNN model
     model = Sequential()
@@ -386,7 +386,7 @@ if Kernel_size>1:
     
     model.summary()
 else:
-    # define the patch CNN model with L2 regularization and dropout
+   
 
     # create  MLP model
     model = Sequential()
@@ -423,10 +423,6 @@ ConvNetmodel = load_model(FullModelPath)
 # =============================================================================
 
 """ CLASSIFY THE HOLDOUT IMAGES WITH THE CNN-SUPERVISED CLASSIFICATION """ 
-
-#size = 50 #Do not edit. The base models supplied all assume a tile size of 50.
-#size = 60 #Do not edit. The base models supplied all assume a tile size of 50. #224
-
 # Getting Names from the files
 # Glob list fo all jpg images, get unique names form the total list
 img = glob.glob(PredictPath+"S2A*.png")
@@ -457,7 +453,6 @@ for i,im in enumerate(img):
         
         #Tile the images to run the convnet
         ImCrop = CropToTile (Im3D[:,:,0:Ndims], size) #pass RGB or RGBNIR to the convnet, as needed
-        #ImCrop = CropToTile (Im3D, size)
         I_tiles = split_image_to_tiles(ImCrop, size)
         I_tiles=(I_tiles)/255
         
@@ -481,8 +476,7 @@ for i,im in enumerate(img):
         
         
         """ APPLY THE PATCH CNN USING SAME CLASS SYSTEM """
-        
-#        PredictedClass0_6 = class_prediction_to_image(Class, PredictedTiles, size)
+
         #needed so the CSC CNN uses the same class system as VGG  
         PredictedTiles = None
 
@@ -490,7 +484,7 @@ for i,im in enumerate(img):
         I_Stride1Tiles, Labels = slide_rasters_to_tiles(Im3D[:,:,0:Ndims], PredictedClass, Kernel_size) 
         I_Stride1Tiles = np.int16(I_Stride1Tiles) / 255 #already normalised
         I_Stride1Tiles = np.squeeze(I_Stride1Tiles)
-        Labels[0,0]=NClasses #force at least 1 pixel to have class 7 and control 1 hot encoding
+        Labels[0,0]=NClasses #force at least 1 pixel to have class 7 and control 1 hot encoding. means that argument of maximum predition is the class.
         Labels1Hot = to_categorical(Labels)
         if ModelTuning:
             TuneModelEpochs(I_Stride1Tiles,Labels1Hot, model, TuningDataName,TrainPath)
@@ -503,12 +497,11 @@ for i,im in enumerate(img):
                 
         #Fit the predictor to all patches
         Predicted = model.predict(x=I_Stride1Tiles, batch_size=50000, verbose=Chatty)
-        # The zero column is removed later so +1 argmax is used following predictions:
         I_Stride1Tiles = None
         Labels1Hot = None
 
-        Predicted = np.argmax(Predicted, axis=1) #+1
-        #the +1 means that the classes now correspond to their indices.
+        Predicted = np.argmax(Predicted, axis=1) 
+
         
         #Reshape the predictions to image format and display
         PredictedImage = Predicted.reshape(Im3D.shape[0]-Kernel_size, Im3D.shape[1]-Kernel_size) #why the -5? (Im3D.shape[0]-5, Im3D.shape[1]-5)
@@ -549,8 +542,6 @@ for i,im in enumerate(img):
         print('\n')
         print('CNN-Supervised classification results for ' + os.path.basename(im))
         print(reportSSC)
-        #print('Confusion Matrix:')
-        #print(metrics.confusion_matrix(Class, PredictedImageVECT))
         print('\n')
         
         CSCname = ScorePath + 'CSC_' + os.path.basename(im)[:-4] + '_' + Experiment + '.csv'    
@@ -567,7 +558,7 @@ for i,im in enumerate(img):
         """ SAVE AND OUTPUT FIGURE RESULTS """
 
         #Display and/or oputput figure results
-        #PredictedImage = PredictedPixels.reshape(Entropy.shape[0], Entropy.shape[1])
+
         for c in range(0,8): #this sets 1 pixel to each class to standardise colour display - max num add one to num of classes
             ClassIm[c,0] = c
             PredictedClass[c,0] = c
