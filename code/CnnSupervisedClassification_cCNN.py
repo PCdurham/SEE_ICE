@@ -80,7 +80,7 @@ TrainPath = 'D:\\Tiles50_outputs\\'  #location of the model
 PredictPath = 'D:\\S2_Images\\H13_09_19_900px\\'   #Location of the images
 ScorePath = 'D:\\S2_Images\\Test\\'      #location of the output files and the model
 Experiment = 'debug11May'    #ID to append to output performance files
-ModelTuning=True
+ModelTuning=False
 TuningDataName='Test' #no extension
 
 '''BASIC PARAMETER CHOICES'''
@@ -89,11 +89,7 @@ TrainingEpochs = 5 #Typically this can be reduced
 Ndims = 4 # Feature Dimensions for the pre-trained CNN.
 NClasses = 7  #The number of classes in the data. This MUST be the same as the classes used to retrain the model
 Filters = 32
-<<<<<<< HEAD
-Kernel_size = 3 
-=======
 Kernel_size = 15 
->>>>>>> a0af3e6ff8d8b0e2ae6d6c04fdfed80fe8bad8df
 size = 50 #size of the prediction tiles
 SaveClassRaster = False #If true this will save each class image to disk.  Outputs are not geocoded in this script. For GIS integration, see CnnSupervisedClassification_PyQGIS.py
 DisplayHoldout =  True #Display the results figure which is saved to disk.  
@@ -592,12 +588,11 @@ for i,im in enumerate(img):
     
         plt.subplot(2,2,3)
         plt.imshow(np.squeeze(PredictedClass), cmap=cmapCHM)
-        plt.xlabel('CNN Tile Classification. F1: ' + GetF1(reportCNN), fontweight='bold')
+        plt.xlabel('CNN Tile Classification | F1: ' + GetF1(reportCNN), fontweight='bold')
         plt.subplot(2,2,4)
         plt.imshow(PredictedImage, cmap=cmapCHM)
         
-        F1 = (float(GetF1(reportSSC)))*100
-        plt.xlabel('CNN-Supervised Classification F1: ' + GetF1(reportSSC) +'% (Patch size: '+str(Kernel_size)+ 'pix.', fontweight='bold' )
+        plt.xlabel('CSC | F1: ' + GetF1(reportSSC) +' (Patch size: '+str(Kernel_size)+ ' pix.)', fontweight='bold' )
 
         FigName = ScorePath + 'CSC_'+  Experiment + '_'+ os.path.basename(im)[:-4] +'.png'
         plt.savefig(FigName, dpi=OutDPI, bbox_inches='tight')
