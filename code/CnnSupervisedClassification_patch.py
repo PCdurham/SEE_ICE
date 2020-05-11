@@ -76,26 +76,28 @@ import glob
 """User data input. Fill in the info below before running"""
 
 ModelName = 'VGG16_noise_RGBNIR_50'     #should be the model name from previous run of TrainCNN.py
-TrainPath = 'D:\\CNN_Data\\'  
-PredictPath = 'D:\\S2_Images\\H13_09_19_600px\\'   #Location of the images
-ScorePath = 'D:\\S2_Images\\Test\\'      #location of the output files and the model
-Experiment = 'VGG_CSC_PatchSize15'    #ID to append to output performance files
+TrainPath = 'D:\\SEE_ICE\\'  #location of the model
+PredictPath = 'D:\\SEE_ICE\\First60HelValidationTiles\\'   #Location of the images
+ScorePath = 'D:\\SEE_ICE\SI_test\\'      #location of the output files and the model
+Experiment = 'debug11May'    #ID to append to output performance files
+ModelTuning=True
+TuningFigName='Test' #no extension
 
 '''BASIC PARAMETER CHOICES'''
 UseSmote = False #Turn SMOTE-ENN resampling on and off
 TrainingEpochs = 12 #Typically this can be reduced
 Ndims = 4 # Feature Dimensions. 3 if just RGB, 4 will add a co-occurence entropy on 11x11 pixels.  There is NO evidence showing that this actually improves the outcomes. RGB is recommended.
 SubSample = 1 #0-1 percentage of the CNN output to use in the MLP. 1 gives the published results.
-NClasses = 8  #The number of classes in the data. This MUST be the same as the classes used to retrain the model
+NClasses = 7  #The number of classes in the data. This MUST be the same as the classes used to retrain the model
+Filters = 32
+Kernel_size = 1 
+size = 50 #size of the prediction tiles
 SaveClassRaster = False #If true this will save each class image to disk.  Outputs are not geocoded in this script. For GIS integration, see CnnSupervisedClassification_PyQGIS.py
 DisplayHoldout =  True #Display the results figure which is saved to disk.  
 OutDPI = 900 #Recommended 150 for inspection 1200 for papers.  
 
 '''FILTERING OPTIONS'''
 #These parameters offer extra options to smooth the classification outputs.  By default they are set
-#to be inactive.  They are not used or discussed in the paper and poster associated to this code.
-MinTiles = 0 #The minimum number of contiguous tiles to consider as a significnat element in the image.  
-RecogThresh = 0 #minimum prob of the top-1 predictions to keep
 SmallestElement = 0 # Despeckle the classification to the smallest length in pixels of element remaining, just enter linear units (e.g. 3 for 3X3 pixels)
 
 
@@ -106,12 +108,6 @@ LearningRate = 0.001
 Chatty = 1 # set the verbosity of the model training.  Use 1 at first, 0 when confident that model is well tuned
 MinSample = 250000 #minimum sample size per class before warning
 
-Filters = 32
-Kernel_size = 15 
-Input_shape = (15,15,4)
-#can change but has to be an odd number so there is always a centre pixel
-
-size = 50 #Do not edit. The base models supplied all assume a tile size of 50. #224
 
 
 # Path checks- checks for folder ending slash, adds if nessesary
@@ -332,26 +328,45 @@ def GetF1(report):
 """ INSTANTIATE THE CNN PATCH PIXEL-BASED CLASSIFIER """ 
    
 
-# define the patch CNN model with L2 regularization and dropout
+# define the patch CNN model with L2 regularization and batch normalisation
+if Kernel_size>1:
+    # create cCNN model
+    model = Sequential()
+    model.add(Conv2D(Filters,Kernel_size, data_format='channels_last', input_shape=(Kernel_size, Kernel_size, Ndims))) #model.add(Conv2D(16,5, data_format='channels_last', input_shape=(5,5,4)))
+    model.add(Flatten())
+    model.add(Dense(64, kernel_regularizer= regularizers.l2(0.001), kernel_initializer='normal', activation='relu'))
+    model.add(BatchNormalization(axis=-1, momentum=0.99, epsilon=0.001, center=True, scale=True, beta_initializer='zeros', gamma_initializer='ones', moving_mean_initializer='zeros', moving_variance_initializer='ones', beta_regularizer=None, gamma_regularizer=None, beta_constraint=None, gamma_constraint=None))
+    model.add(Dense(32, kernel_regularizer= regularizers.l2(0.001), kernel_initializer='normal', activation='relu'))
+    model.add(Dense(16, kernel_regularizer= regularizers.l2(0.001), kernel_initializer='normal', activation='relu'))
+    
+    model.add(Dense(NClasses+1, kernel_initializer='normal', activation='softmax')) 
+    
+        # Tune an optimiser
+    Optim = optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=True)
+    
+        # Compile model
+    model.compile(loss='categorical_crossentropy', optimizer=Optim, metrics = ['accuracy'])
+    
+    model.summary()
+else:
+    # define the patch CNN model with L2 regularization and dropout
 
-    # create model
-model = Sequential()
-model.add(Conv2D(Filters,Kernel_size, data_format='channels_last', input_shape=Input_shape)) #model.add(Conv2D(16,5, data_format='channels_last', input_shape=(5,5,4)))
-model.add(Flatten())
-model.add(Dense(64, kernel_regularizer= regularizers.l2(0.001), kernel_initializer='normal', activation='relu'))
-model.add(BatchNormalization(axis=-1, momentum=0.99, epsilon=0.001, center=True, scale=True, beta_initializer='zeros', gamma_initializer='ones', moving_mean_initializer='zeros', moving_variance_initializer='ones', beta_regularizer=None, gamma_regularizer=None, beta_constraint=None, gamma_constraint=None))
-model.add(Dense(32, kernel_regularizer= regularizers.l2(0.001), kernel_initializer='normal', activation='relu'))
-model.add(Dense(16, kernel_regularizer= regularizers.l2(0.001), kernel_initializer='normal', activation='relu'))
-
-model.add(Dense(NClasses, kernel_initializer='normal', activation='softmax')) 
-
-    # Tune an optimiser
-Optim = optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=True)
-
-    # Compile model
-model.compile(loss='categorical_crossentropy', optimizer=Optim, metrics = ['accuracy'])
-
-model.summary() 
+    # create  MLP model
+    model = Sequential()
+    model.add(Dense(64, kernel_regularizer= regularizers.l2(0.001),input_dim=Ndims, kernel_initializer='normal', activation='relu'))
+    model.add(BatchNormalization(axis=-1, momentum=0.99, epsilon=0.001, center=True, scale=True, beta_initializer='zeros', gamma_initializer='ones', moving_mean_initializer='zeros', moving_variance_initializer='ones', beta_regularizer=None, gamma_regularizer=None, beta_constraint=None, gamma_constraint=None))
+    model.add(Dense(32, kernel_regularizer= regularizers.l2(0.001), kernel_initializer='normal', activation='relu'))
+    model.add(Dense(16, kernel_regularizer= regularizers.l2(0.001), kernel_initializer='normal', activation='relu'))
+    
+    model.add(Dense(NClasses+1, kernel_initializer='normal', activation='softmax')) 
+    
+        # Tune an optimiser
+    Optim = optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=True)
+    
+        # Compile model
+    model.compile(loss='categorical_crossentropy', optimizer=Optim, metrics = ['accuracy'])
+    
+    model.summary() 
 
 #EstimatorNN = KerasClassifier(build_fn=patchCNN_model_L2D, epochs=TrainingEpochs, batch_size=50000, verbose=Chatty)
   
@@ -379,23 +394,25 @@ ConvNetmodel = load_model(FullModelPath)
 # Glob list fo all jpg images, get unique names form the total list
 img = glob.glob(PredictPath+"S2A*.png")
 
-TestRiverTuple = []
-for im in img:
-    TestRiverTuple.append(os.path.basename(im).partition('_')[0])
-TestRiverTuple = np.unique(TestRiverTuple)
+
 
 # Get training class images (covers tif and tiff file types)
 class_img = glob.glob(PredictPath + "SCLS_S2A*.png")
 
-for f,riv in enumerate(TestRiverTuple):
-    for i,im in enumerate(img): 
+
+for i,im in enumerate(img): 
+    
+    Im3D = np.int16(io.imread(im))
+    #Im3D = io.imread(im)#
+    #print(isinstance(Im3D,uint8))
+    if len(Im3D) == 2:
+        Im3D = Im3D[0]
+    Class = io.imread(class_img[i])
+    PresentClasses=np.unique(Class)
+    if np.max(PresentClasses)==0:
+        print('No truth label data for ' + os.path.basename(im))
+    else:
         print('CNN-supervised classification of ' + os.path.basename(im))
-        Im3D = np.int16(io.imread(im))
-        #Im3D = io.imread(im)#
-        #print(isinstance(Im3D,uint8))
-        if len(Im3D) == 2:
-            Im3D = Im3D[0]
-        Class = io.imread(class_img[i])
         if (Class.shape[0] != Im3D.shape[0]) or (Class.shape[1] != Im3D.shape[1]):
             print('WARNING: inconsistent image and class mask sizes for ' + im)
             Class = T.resize(Class, (Im3D.shape[0], Im3D.shape[1]), preserve_range = True) #bug handling for vector
@@ -405,9 +422,6 @@ for f,riv in enumerate(TestRiverTuple):
         ImCrop = CropToTile (Im3D, size) #(Im3D[:,:,0:3], size)
         #ImCrop = CropToTile (Im3D, size)
         I_tiles = split_image_to_tiles(ImCrop, size)
-        #I_tiles = np.int16(I_tiles *0.0255) #change to maximum value in images - normalised
-        #I_tiles = np.int16(I_tiles)
-        #I_tiles = np.int16(I_tiles) / 255
         I_tiles=(I_tiles)/255
         
         ImCrop = None
@@ -421,23 +435,11 @@ for f,riv in enumerate(TestRiverTuple):
         
         PredictedTiles = ConvNetmodel.predict(I_tiles, batch_size = 32, verbose = Chatty)
         #Convert the convnet one-hot predictions to a new class label image
-        PredictedTiles[PredictedTiles < RecogThresh] = 0
-        #PredictedTiles classes go from 0-6
         I_tiles = None
-        
-        #Correct the classes so they correspond to input validation labels (1-7)
-#        PredictedTiles0_7 = np.insert(PredictedTiles, 0, values=PredictedTiles[:,0], axis=1)
-        #adds an extra column before the zero column (which is a exact replica of the 0 column)
-        #so that predictions go from 0-7 instead 
-        
-        #Final output image for VGG classification:
+
         PredictedClass = class_prediction_to_image(Class, PredictedTiles, size)
         #So now we have a class image of the VGG output with classes corresponding to indices
-        #Zero column is removed later
-        
-#        PredictedTiles0_7 = None
-        
-        #PredictedClass = SimplifyClass(PredictedClass, ClassKey)
+
 
         
         
@@ -449,15 +451,16 @@ for f,riv in enumerate(TestRiverTuple):
         
         #Prep the pixel data into a tensor of patches
         I_Stride1Tiles, Labels = slide_rasters_to_tiles(Im3D, PredictedClass, Kernel_size) 
-        I_Stride1Tiles = np.int16(I_Stride1Tiles) #/ 255 #already normalised
-        Labels1Hot = to_categorical(Labels, num_classes=NClasses)
-        PredictedClass0_6 = None
-        Labels = None
+        I_Stride1Tiles = np.int16(I_Stride1Tiles) / 255 #already normalised
+        I_Stride1Tiles = np.squeeze(I_Stride1Tiles)
+        Labels1Hot = to_categorical(Labels)
+        if Kernel_size>1:
+            print('Fitting compact CNN Classifier on ' + str(I_Stride1Tiles.shape[0]) + ' tiles')
+        else:
+            print('Fitting MLP Classifier on ' + str(I_Stride1Tiles.shape[0]) + ' tiles')
 
-        print('Fitting patch CNN Classifier on ' + str(I_Stride1Tiles.shape[0]) + ' tiles')
         model.fit(x=I_Stride1Tiles, y=Labels1Hot, epochs=TrainingEpochs, batch_size=5000, verbose=Chatty)
-        #Labels1Hot has 7 classes going from 0-6
-        
+                
         #Fit the predictor to all patches
         Predicted = model.predict(x=I_Stride1Tiles, batch_size=50000, verbose=Chatty)
         # The zero column is removed later so +1 argmax is used following predictions:
@@ -484,7 +487,7 @@ for f,riv in enumerate(TestRiverTuple):
         #reshapes to a 1d vector
 
         
-        PredictedClass = PredictedClass[0:PredictedClass.shape[0]-Kernel_size, 0:PredictedClass.shape[1]-Kernel_size] 
+        PredictedClass = PredictedClass[0:PredictedClass.shape[0]-Kernel_size+1, 0:PredictedClass.shape[1]-Kernel_size+1] 
         #makes the same shape as other output rasters
 
         PredictedImageVECT = PredictedImage.reshape(-1,1) #This is the pixel-based prediction
@@ -564,14 +567,10 @@ for f,riv in enumerate(TestRiverTuple):
         plt.savefig(FigName, dpi=OutDPI, bbox_inches='tight')
         if not DisplayHoldout:
             plt.close()
-        # Figure output below is NOT geocoded.
-        if SaveClassRaster:
-            ClassRasterName = ScorePath + 'CSC_'+ os.path.basename(im)[:-4] +'.tif'
-            PredictedImage = PredictedPixels.reshape(Im3D.shape[0], Im3D.shape[1]) #This removes the pixels from line 500 that are used to control coolur scheme
-            io.imsave(ClassRasterName, PredictedImage)
+        
             
 
-            
-
+                
+    
 
 
