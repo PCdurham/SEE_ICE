@@ -61,6 +61,7 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout, BatchNormalization,Conv2D, Flatten
 from tensorflow.keras.utils import to_categorical
 from sklearn.model_selection import train_test_split
+from skimage.filters.rank import modal
 import os.path
 from sklearn import metrics
 from skimage.morphology import disk
