@@ -89,7 +89,7 @@ TrainingEpochs = 100 #Typically this can be reduced
 Ndims = 4 # Feature Dimensions for the pre-trained CNN.
 NClasses = 7  #The number of classes in the data. This MUST be the same as the classes used to retrain the model
 Filters = 64
-Kernel_size = 5 
+Kernel_size = 7 
 size = 50 #size of the prediction tiles
 CNNsamples= 100000 #number of subsamples to extract and train cCNN or MLP
 
@@ -99,7 +99,7 @@ OutDPI = 900 #Recommended 150 for inspection 1200 for papers.
 
 '''FILTERING OPTIONS'''
 #These parameters offer extra options to smooth the classification outputs.  By default they are set
-SmallestElement = 1 # Despeckle the classification to the smallest length in pixels of element remaining, just enter linear units (e.g. 3 for 3X3 pixels)
+SmallestElement = 5 # Despeckle the classification to the smallest length in pixels of element remaining, just enter linear units (e.g. 3 for 3X3 pixels)
 
 
 '''MODEL PARAMETERS''' #These would usually not be edited
@@ -467,6 +467,7 @@ for i,im in enumerate(img):
     if len(Im3D) == 2:
         Im3D = Im3D[0]
     Class = io.imread(class_img[i])
+
     PresentClasses=np.unique(Class)
     if np.max(PresentClasses)==0:
         print('No truth label data for ' + os.path.basename(im))
@@ -496,6 +497,7 @@ for i,im in enumerate(img):
         I_tiles = None
 
         PredictedClass = class_prediction_to_image(Class, PredictedTiles, size)
+
         #So now we have a class image of the VGG output with classes corresponding to indices
 
 
@@ -535,6 +537,7 @@ for i,im in enumerate(img):
 
         if SmallestElement > 0:
             PredictedImage = modal(np.uint8(PredictedImage), disk(2*SmallestElement)) #clean up the class with a mode filter
+
 
         Predicted = None
 # =============================================================================
