@@ -77,7 +77,7 @@ import glob
 
 ModelName = 'VGG16_noise_RGBNIR_50'     #should be the model name from previous run of TrainCNN.py
 TrainPath = 'D:\\SEE_ICE\\'  #location of the model
-PredictPath = 'D:\\SEE_ICE\\First60HelValidationTiles\\'   #Location of the images
+PredictPath = 'D:\\SEE_ICE\\H04_04_19\\'   #Location of the images
 ScorePath = 'D:\\SEE_ICE\SI_test\\'      #location of the output files and the model
 Experiment = 'debug11May'    #ID to append to output performance files
 ModelTuning=False
@@ -88,10 +88,10 @@ UseSmote = False #Turn SMOTE-ENN resampling on and off
 TrainingEpochs = 100 #Typically this can be reduced
 Ndims = 4 # Feature Dimensions for the pre-trained CNN.
 NClasses = 7  #The number of classes in the data. This MUST be the same as the classes used to retrain the model
-Filters = 32
-Kernel_size = 3 
+Filters = 64
+Kernel_size = 5 
 size = 50 #size of the prediction tiles
-CNNsamples= 200000 #number of subsamples to extract and train cCNN or MLP
+CNNsamples= 100000 #number of subsamples to extract and train cCNN or MLP
 
 SaveClassRaster = False #If true this will save each class image to disk.  Outputs are not geocoded in this script. For GIS integration, see CnnSupervisedClassification_PyQGIS.py
 DisplayHoldout =  True #Display the results figure which is saved to disk.  
@@ -185,23 +185,27 @@ def slide_rasters_to_tiles(im, size):
     return TileTensor
 
 
-def Sample_Raster_Tiles(im, CLS, size, Ndims, samples):
-    X, Y =np.where(CLS!=0)
-    sample_idx = np.int32(len(X)*np.random.uniform(size=(samples,1)))
-    TileTensor = np.zeros((samples, size,size,Ndims))
-    Label = np.zeros((samples,1))
-    for s in range(samples+1):
-        try:
-            TileTensor[s,:,:,:] = im[Y[sample_idx[s,0]]:Y[sample_idx[s,0]]+size,X[sample_idx[s,0]]:X[sample_idx[s,0]]+size,0:Ndims]
-            Label[s] = np.median(CLS[Y[sample_idx[s,0]]:Y[sample_idx[s,0]]+size,X[sample_idx[s,0]]:X[sample_idx[s,0]]+size].reshape(1,-1))
-        except:
-            edge=1
-                
-    data = Label.ravel() !=0
-    TileTensor = np.compress(data, TileTensor, axis=0)
-    Label = np.compress(data, Label, axis=0)
-    
-    return TileTensor, Label
+def Sample_Raster_Tiles(im, CLS, size, Ndims, samples, NClasses):
+    MasterTileTensor = np.zeros((1,size,size,Ndims))
+    MasterLabel = np.zeros((1,1))
+    for C in range(NClasses+1):
+        X, Y =np.where(CLS==C)
+        sample_idx = np.int32(len(X)*np.random.uniform(size=(samples,1)))
+        TileTensor = np.zeros((samples, size,size,Ndims))
+        Label = np.zeros((samples,1))
+        for s in range(samples+1):
+            try:
+                TileTensor[s,:,:,:] = im[Y[sample_idx[s,0]]:Y[sample_idx[s,0]]+size,X[sample_idx[s,0]]:X[sample_idx[s,0]]+size,0:Ndims]
+                Label[s] = np.median(CLS[Y[sample_idx[s,0]]:Y[sample_idx[s,0]]+size,X[sample_idx[s,0]]:X[sample_idx[s,0]]+size].reshape(1,-1))
+            except:
+                edge=1
+                    
+        data = Label.ravel() !=0
+        TileTensor = np.compress(data, TileTensor, axis=0)
+        Label = np.compress(data, Label, axis=0)
+        MasterTileTensor = np.concatenate((MasterTileTensor,TileTensor), axis=0)
+        MasterLabel = np.concatenate((MasterLabel,Label), axis=0)
+    return MasterTileTensor[1:,:,:,:], MasterLabel[1:,:]
         
     
     
@@ -393,10 +397,10 @@ if Kernel_size>1:
     model = Sequential()
     model.add(Conv2D(Filters,Kernel_size, data_format='channels_last', input_shape=(Kernel_size, Kernel_size, Ndims))) #model.add(Conv2D(16,5, data_format='channels_last', input_shape=(5,5,4)))
     model.add(Flatten())
-    model.add(Dense(64, kernel_regularizer= regularizers.l2(0.001), kernel_initializer='normal', activation='relu'))
+    model.add(Dense(512, kernel_regularizer= regularizers.l2(0.001), kernel_initializer='normal', activation='relu'))
     model.add(BatchNormalization(axis=-1, momentum=0.99, epsilon=0.001, center=True, scale=True, beta_initializer='zeros', gamma_initializer='ones', moving_mean_initializer='zeros', moving_variance_initializer='ones', beta_regularizer=None, gamma_regularizer=None, beta_constraint=None, gamma_constraint=None))
+    model.add(Dense(64, kernel_regularizer= regularizers.l2(0.001), kernel_initializer='normal', activation='relu'))
     model.add(Dense(32, kernel_regularizer= regularizers.l2(0.001), kernel_initializer='normal', activation='relu'))
-    model.add(Dense(16, kernel_regularizer= regularizers.l2(0.001), kernel_initializer='normal', activation='relu'))
     
     model.add(Dense(NClasses+1, kernel_initializer='normal', activation='softmax')) 
     
@@ -503,7 +507,7 @@ for i,im in enumerate(img):
         PredictedTiles = None
 
         #Prep the pixel data into a tensor of patches
-        I_Stride1Tiles, Labels = Sample_Raster_Tiles(Im3D, PredictedClass, Kernel_size, Ndims,CNNsamples) 
+        I_Stride1Tiles, Labels = Sample_Raster_Tiles(Im3D, PredictedClass, Kernel_size, Ndims,CNNsamples, NClasses) 
         I_Stride1Tiles = np.int16(I_Stride1Tiles) / 255 #already normalised
         I_Stride1Tiles = np.squeeze(I_Stride1Tiles)
         Labels[0,0]=NClasses #force at least 1 pixel to have class 7 and control 1 hot encoding. means that argument of maximum predition is the class.
@@ -524,8 +528,8 @@ for i,im in enumerate(img):
             print('row '+str(r)+' of '+str(Im3D.shape[0]))
             Irow = Im3D[r:r+Kernel_size+1,:,:]
             #tile the image
-            Tiles = slide_rasters_to_tiles(Irow, Kernel_size)
-            Predicted = model.predict(Tiles)
+            Tiles = np.squeeze(slide_rasters_to_tiles(Irow, Kernel_size))/255
+            Predicted = model.predict(Tiles, batch_size=10000)
 
             PredictedImage[r+Kernel_size//2,Kernel_size//2:-Kernel_size//2]=np.argmax(Predicted, axis=1)
 
