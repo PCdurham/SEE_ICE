@@ -50,6 +50,7 @@ from tensorflow.keras import regularizers
 from tensorflow.keras import optimizers
 from tensorflow.keras.models import load_model
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.patches as mpatches
@@ -65,7 +66,7 @@ from tensorflow.keras.utils import to_categorical
 import os.path
 from sklearn import metrics
 from skimage.morphology import disk
-#from imblearn.combine import SMOTEENN
+from sklearn.model_selection import train_test_split
 import copy
 import sys
 from IPython import get_ipython #this can be removed if not using Spyder
@@ -75,15 +76,20 @@ import glob
 
 """User data input. Fill in the info below before running"""
 
-ModelName = 'Train6030VGG16_13ims8eps'     #should be the model name from previous run of TrainCNN.py
-TrainPath = 'D:\\CNN_Data\\'  
-PredictPath = 'D:\\S2_Images\\'   #Location of the images
-ScorePath = 'D:\\S2_Images\\Results_pixel\\'      #location of the output files and the model
-Experiment = 'VGG60_CSC_PatchSize1'    #ID to append to output performance files
+ModelName = 'VGG16_noise_RGBNIR_50'     #should be the model name from previous run of TrainCNN.py
+TrainPath = 'D:\\SEE_ICE\\'  #location of the model
+PredictPath = 'D:\\SEE_ICE\\First60HelValidationTiles\\'   #Location of the images
+ScorePath = 'D:\\SEE_ICE\SI_test\\'      #location of the output files and the model
+Experiment = 'debug11May'    #ID to append to output performance files
+ModelTuning=True
+TuningFigName='Test' #no extension
 
 '''BASIC PARAMETER CHOICES'''
 UseSmote = False #Turn SMOTE-ENN resampling on and off
 TrainingEpochs = 25 #Typically this can be reduced
+Filters = 16
+size = 50
+Kernel_size=1 #don't change, this script uses pixel-based predictions
 Ndims = 4 # Feature Dimensions. 3 if just RGB, 4 for RGB_NIR
 SubSample = 1 #0-1 percentage of the CNN output to use in the MLP. 1 gives the published results.
 NClasses = 7  #The number of classes in the data. This MUST be the same as the classes used to retrain the model
@@ -106,12 +112,7 @@ LearningRate = 0.001
 Chatty = 1 # set the verbosity of the model training.  Use 1 at first, 0 when confident that model is well tuned
 MinSample = 250000 #minimum sample size per class before warning
 
-Filters = 16
-Kernel_size = 1 
-Input_shape = (1,1,4)
-#can change but has to be an odd number so there is always a centre pixel
 
-size = 60 #Do not edit. The base models supplied all assume a tile size of 50. #224
 
 
 # Path checks- checks for folder ending slash, adds if nessesary
@@ -336,11 +337,10 @@ def GetF1(report):
 
     # create model
 model = Sequential()
-model.add(Dense(128, kernel_regularizer= regularizers.l2(0.001),input_dim=Ndims, kernel_initializer='normal', activation='relu'))
-model.add(Dense(128, kernel_regularizer= regularizers.l2(0.001), kernel_initializer='normal', activation='relu'))
-model.add(Dropout(0.5))
+model.add(Dense(64, kernel_regularizer= regularizers.l2(0.001),input_dim=Ndims, kernel_initializer='normal', activation='relu'))
+model.add(BatchNormalization(axis=-1, momentum=0.99, epsilon=0.001, center=True, scale=True, beta_initializer='zeros', gamma_initializer='ones', moving_mean_initializer='zeros', moving_variance_initializer='ones', beta_regularizer=None, gamma_regularizer=None, beta_constraint=None, gamma_constraint=None))
 model.add(Dense(32, kernel_regularizer= regularizers.l2(0.001), kernel_initializer='normal', activation='relu'))
-model.add(Dense(32, kernel_regularizer= regularizers.l2(0.001), kernel_initializer='normal', activation='relu'))
+model.add(Dense(16, kernel_regularizer= regularizers.l2(0.001), kernel_initializer='normal', activation='relu'))
 
 model.add(Dense(NClasses, kernel_initializer='normal', activation='softmax')) 
 
@@ -376,7 +376,7 @@ ConvNetmodel = load_model(FullModelPath)
 
 # Getting Names from the files
 # Glob list fo all jpg images, get unique names form the total list
-img = glob.glob(PredictPath+"S2A*.tif")
+img = glob.glob(PredictPath+"S2A*.png")
 
 TestRiverTuple = []
 for im in img:
@@ -384,7 +384,7 @@ for im in img:
 TestRiverTuple = np.unique(TestRiverTuple)
 
 # Get training class images (covers tif and tiff file types)
-class_img = glob.glob(PredictPath + "SCLS_S2A*.tif")
+class_img = glob.glob(PredictPath + "SCLS_S2A*.png")
 
 for f,riv in enumerate(TestRiverTuple):
     for i,im in enumerate(img): 
@@ -401,7 +401,7 @@ for f,riv in enumerate(TestRiverTuple):
         ClassIm = copy.deepcopy(Class)
         
         #Tile the images to run the convnet
-        ImCrop = CropToTile (Im3D[:,:,0:3], size)
+        ImCrop = CropToTile (Im3D[:,:,0:Ndims], size)
         #ImCrop = CropToTile (Im3D, size)
         I_tiles = split_image_to_tiles(ImCrop, size)
         #I_tiles = np.int16(I_tiles *0.0255) #change to maximum value in images - normalised
@@ -447,14 +447,17 @@ for f,riv in enumerate(TestRiverTuple):
         PredictedTiles = None
         
         #Prep the pixel data into a tensor of patches
-        I_Stride1Tiles, Labels = slide_rasters_to_tiles(Im3D, PredictedClass0_6, Kernel_size)
+        I_Stride1Tiles, Labels = slide_rasters_to_tiles(Im3D, PredictedClass0_6, 1)
         I_Stride1Tiles = np.squeeze(I_Stride1Tiles)
-        I_Stride1Tiles = np.int16(I_Stride1Tiles) #/ 255 already normalised
+        I_Stride1Tiles = np.int16(I_Stride1Tiles) / 255 #already normalised
         Labels1Hot = to_categorical(Labels, num_classes=NClasses)
         PredictedClass0_6 = None
         Labels = None
-
+ 
+        
         print('Fitting patch CNN Classifier on ' + str(I_Stride1Tiles.shape[0]) + ' tiles')
+#        if ModelTuning:
+#            TuneModel(I_Stride1Tiles,Labels1Hot)
         model.fit(x=I_Stride1Tiles, y=Labels1Hot, epochs=TrainingEpochs, batch_size=5000, verbose=Chatty)
         #Labels1Hot has 7 classes going from 0-6
         
@@ -484,7 +487,7 @@ for f,riv in enumerate(TestRiverTuple):
         #reshapes to a 1d vector
 
         
-        PredictedClass = PredictedClass[0:PredictedClass.shape[0]-Kernel_size, 0:PredictedClass.shape[1]-Kernel_size] 
+        PredictedClass = PredictedClass[0:PredictedClass.shape[0], 0:PredictedClass.shape[1]] 
         #makes the same shape as other output rasters
 
         PredictedImageVECT = PredictedImage.reshape(-1,1) #This is the pixel-based prediction
