@@ -59,9 +59,6 @@ import skimage.transform as T
 import pandas as pd
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout, BatchNormalization,Conv2D, Flatten
-from tensorflow.keras.wrappers.scikit_learn import KerasClassifier
-from sklearn.preprocessing import StandardScaler
-from skimage.filters.rank import median, entropy, modal
 from tensorflow.keras.utils import to_categorical
 from sklearn.model_selection import train_test_split
 import os.path
@@ -82,14 +79,13 @@ TrainPath = 'D:\\SEE_ICE\\'  #location of the model
 PredictPath = 'D:\\SEE_ICE\\First60HelValidationTiles\\'   #Location of the images
 ScorePath = 'D:\\SEE_ICE\SI_test\\'      #location of the output files and the model
 Experiment = 'debug11May'    #ID to append to output performance files
-ModelTuning=True
+ModelTuning=False
 TuningDataName='Test' #no extension
 
 '''BASIC PARAMETER CHOICES'''
 UseSmote = False #Turn SMOTE-ENN resampling on and off
 TrainingEpochs = 100 #Typically this can be reduced
-Ndims = 4 # Feature Dimensions. 3 if just RGB, 4 will add a co-occurence entropy on 11x11 pixels.  There is NO evidence showing that this actually improves the outcomes. RGB is recommended.
-SubSample = 1 #0-1 percentage of the CNN output to use in the MLP. 1 gives the published results.
+Ndims = 4 # Feature Dimensions for the pre-trained CNN.
 NClasses = 7  #The number of classes in the data. This MUST be the same as the classes used to retrain the model
 Filters = 32
 Kernel_size = 7 
@@ -459,7 +455,7 @@ for i,im in enumerate(img):
         ClassIm = copy.deepcopy(Class)
         
         #Tile the images to run the convnet
-        ImCrop = CropToTile (Im3D, size) #(Im3D[:,:,0:3], size)
+        ImCrop = CropToTile (Im3D[:,:,0:Ndims], size) #pass RGB or RGBNIR to the convnet, as needed
         #ImCrop = CropToTile (Im3D, size)
         I_tiles = split_image_to_tiles(ImCrop, size)
         I_tiles=(I_tiles)/255
@@ -490,7 +486,7 @@ for i,im in enumerate(img):
         PredictedTiles = None
 
         #Prep the pixel data into a tensor of patches
-        I_Stride1Tiles, Labels = slide_rasters_to_tiles(Im3D, PredictedClass, Kernel_size) 
+        I_Stride1Tiles, Labels = slide_rasters_to_tiles(Im3D[:,:,0:Ndims], PredictedClass, Kernel_size) 
         I_Stride1Tiles = np.int16(I_Stride1Tiles) / 255 #already normalised
         I_Stride1Tiles = np.squeeze(I_Stride1Tiles)
         Labels[0,0]=NClasses #force at least 1 pixel to have class 7 and control 1 hot encoding
