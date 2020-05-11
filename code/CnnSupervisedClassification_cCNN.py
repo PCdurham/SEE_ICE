@@ -80,7 +80,7 @@ TrainPath = 'D:\\SEE_ICE\\'  #location of the model
 PredictPath = 'D:\\SEE_ICE\\First60HelValidationTiles\\'   #Location of the images
 ScorePath = 'D:\\SEE_ICE\SI_test\\'      #location of the output files and the model
 Experiment = 'debug11May'    #ID to append to output performance files
-ModelTuning=False
+ModelTuning=True
 TuningDataName='Test' #no extension
 
 '''BASIC PARAMETER CHOICES'''
@@ -89,7 +89,7 @@ TrainingEpochs = 100 #Typically this can be reduced
 Ndims = 4 # Feature Dimensions for the pre-trained CNN.
 NClasses = 7  #The number of classes in the data. This MUST be the same as the classes used to retrain the model
 Filters = 32
-Kernel_size = 7 
+Kernel_size = 3 
 size = 50 #size of the prediction tiles
 SaveClassRaster = False #If true this will save each class image to disk.  Outputs are not geocoded in this script. For GIS integration, see CnnSupervisedClassification_PyQGIS.py
 DisplayHoldout =  True #Display the results figure which is saved to disk.  
@@ -326,7 +326,7 @@ def TuneModelEpochs(Tiles,Labels, model,TuningDataName,Path):
     (trainX, testX, trainY, testY) = train_test_split(Tiles, Labels, test_size=0.2)
     
 
-    history = model.fit(trainX, trainY, epochs = 10, batch_size = 5000, validation_data = (testX, testY))
+    history = model.fit(trainX, trainY, epochs = 500, batch_size = 5000, validation_data = (testX, testY))
     #Plot the test results
     history_dict = history.history
     loss_values = history_dict['loss']
