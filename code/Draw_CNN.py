@@ -7,6 +7,7 @@ Created on Tue Feb  4 15:25:48 2020
 
 """ IMPORTS """
 
+import glob
 import numpy as np
 import skimage.transform as T
 import pandas as pd
@@ -25,14 +26,14 @@ and a classification report.
 '''
 
 """ USER INPUT """
-
+TilesFolder = 'D:\\S2_Images\\H13_09_19_3000px\\'
 train_path = 'D:\\CNN_Data\\'
-Output_figure_path = 'D:\\NewVGG16_outputsTest\\Scoresby\\'
+Output_figure_path = 'D:\\S2_Images\\Test\\'
 ModelName = 'VGG16_noise_RGBNIR_50' 
-Image_name = 'D:\\S2_Images\\S2A1.png\\' #put entire path name with tiff of image used to show classification
+Image_name = 'D:\\S2_Images\\H13_09_19_3000px\\S2A5.png\\' #put entire path name with tiff of image used to show classification
 #example Image_name = 'E:\\Masters\\Helheim19\\zb_18_06\\clip\\clip_18_06RGB.tif\\' #put entire path name with tiff of image used to show classification
-Image_validation_raster = 'D:\\S2_Images\\SCLS_S2A1.png\\'
-Image_date = '01-08-2019'
+Image_validation_raster = 'D:\\S2_Images\\H13_09_19_3000px\\SCLS_S2A5.png\\'
+Image_date = '13-09-2019'
 size = 50
 stride = size
 NormFactor = 255 #Factor to scale the images to roughly 0-1
@@ -117,9 +118,10 @@ def GetF1(report):
 
 # =============================================================================
 
+
 # =============================================================================
 # Makes a bucket of zeros in the shape of a tensor and then puts each tile into its own slot in the tensor
-    
+
 im = io.imread(Image_name)#reads in image and stored as im
 im = CropToTile (im, size) #indexed to remove NIR band im[:,:,0:3]  im[:,:,0:3]
 nTiles_height = im.shape[0]//size
@@ -194,8 +196,9 @@ classification_report_csv(reportCNN, CNNname)
 """ DISPLAY AND/OR OUTPUT FIGURE RESULTS """
 
 plt.figure(figsize = (20, 6)) #reduce these values if you have a small screen
-cmapCHM = colors.ListedColormap(['orange','gold','mediumturquoise','lightgrey', 'darkgrey','teal','darkslategrey'])
-
+#cmapCHM = colors.ListedColormap(['orange','gold','mediumturquoise','lightgrey', 'darkgrey','teal','darkslategrey'])
+#cmapCHM = colors.ListedColormap(['teal','cadetblue','mediumturquoise','paleturquoise', 'mintcream','lightgrey','darkgrey'])
+cmapCHM = colors.ListedColormap(['#03719c','#06b1c4','#6fe1e5','#b9ebee', 'mintcream','#c9c9c9','#775b5a'])
 Im3D = np.int16(io.imread(Image_name))
 #Im3D = np.int16(Im3D *0.0255) #change to maximum value in images - normalised between 0-255
 plt.subplot(1,3,1)
@@ -209,21 +212,31 @@ plt.xlabel('Output VGG16 Classification - F1: ' + GetF1(reportCNN), fontweight='
 
 
 plt.subplot(1,3,3)
-cmapCHM = colors.ListedColormap(['black','orange','gold','teal','mediumturquoise','darkslategrey','lightgrey', 'darkgrey'])
+#cmapCHM = colors.ListedColormap(['black','orange','gold','teal','mediumturquoise','darkslategrey','lightgrey', 'darkgrey'])
+#cmapCHM = colors.ListedColormap(['black','teal','cadetblue','mediumturquoise','paleturquoise','mintcream','lightgrey','darkgrey'])
+cmapCHM = colors.ListedColormap(['black','#03719c','#06b1c4','#6fe1e5','#b9ebee','mintcream','#c9c9c9','#775b5a'])
 Validation_Raster = np.int16(io.imread(Image_validation_raster))
 plt.imshow(Validation_Raster, cmap=cmapCHM)
 plt.xlabel('Validation Labels', fontweight='bold')
 
 
 class0_box = mpatches.Patch(color='black', label='Unclassified')
-class1_box = mpatches.Patch(color='darkgrey', label='Snow on Ice')
-class2_box = mpatches.Patch(color='lightgrey', label='Glacier Ice')
-class3_box = mpatches.Patch(color='darkslategrey', label='Bedrock')
-class4_box = mpatches.Patch(color='teal', label='Snow on Bedrock')
-class5_box = mpatches.Patch(color='mediumturquoise', label='Mélange')
-class6_box = mpatches.Patch(color='gold', label='Ice-berg Water')
-class7_box = mpatches.Patch(color='orange', label='Open Water')
+class1_box = mpatches.Patch(color='#775b5a', label='Bedrock')
+class2_box = mpatches.Patch(color='#c9c9c9', label='Snow on Bedrock')
+class3_box = mpatches.Patch(color='mintcream', label='Snow on Ice')
+class4_box = mpatches.Patch(color='#b9ebee', label='Glacier Ice')
+class5_box = mpatches.Patch(color='#6fe1e5', label='Mélange')
+class6_box = mpatches.Patch(color='#06b1c4', label='Ice-berg Water')
+class7_box = mpatches.Patch(color='#03719c', label='Open Water')
 
+#class0_box = mpatches.Patch(color='black', label='Unclassified')
+#class1_box = mpatches.Patch(color='darkgrey', label='Snow on Ice')
+#class2_box = mpatches.Patch(color='lightgrey', label='Glacier Ice')
+#class3_box = mpatches.Patch(color='darkslategrey', label='Bedrock')
+#class4_box = mpatches.Patch(color='teal', label='Snow on Bedrock')
+#class5_box = mpatches.Patch(color='mediumturquoise', label='Mélange')
+#class6_box = mpatches.Patch(color='gold', label='Ice-berg Water')
+#class7_box = mpatches.Patch(color='orange', label='Open Water')
 
 ax=plt.gca()
 chartBox = ax.get_position()
