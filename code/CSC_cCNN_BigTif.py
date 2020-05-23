@@ -76,10 +76,10 @@ import glob
 """User data input. Fill in the info below before running"""
 
 ModelName = 'VGG16_noise_RGBNIR_50'     #should be the model name from previous run of TrainCNN.py
-TrainPath = 'D:\\SEE_ICE\\'  #location of the model
-PredictPath = 'D:\\SEE_ICE\\H04_04_19\\'   #Location of the images
-ScorePath = 'D:\\SEE_ICE\SI_test\\'      #location of the output files and the model
-Experiment = 'debug11May'    #ID to append to output performance files
+TrainPath = 'D:\\Tiles50_outputs\\'  #location of the model
+PredictPath = 'D:\\S2_Images\\H13_09_19_3000px\\'   #Location of the images
+ScorePath = 'D:\\S2_Images\\Test\\'      #location of the output files and the model
+Experiment = 'test_3000_ks7'    #ID to append to output performance files
 ModelTuning=False
 TuningDataName='Test' #no extension
 
@@ -99,7 +99,7 @@ OutDPI = 900 #Recommended 150 for inspection 1200 for papers.
 
 '''FILTERING OPTIONS'''
 #These parameters offer extra options to smooth the classification outputs.  By default they are set
-SmallestElement = 5 # Despeckle the classification to the smallest length in pixels of element remaining, just enter linear units (e.g. 3 for 3X3 pixels)
+SmallestElement = 1 # Despeckle the classification to the smallest length in pixels of element remaining, just enter linear units (e.g. 3 for 3X3 pixels)
 
 
 '''MODEL PARAMETERS''' #These would usually not be edited
@@ -594,18 +594,29 @@ for i,im in enumerate(img):
         plt.title('Classification Results for ' + os.path.basename(im), fontweight='bold')
         plt.xlabel('Input RGB Image', fontweight='bold')
         plt.subplot(2,2,2)
-        cmapCHM = colors.ListedColormap(['black','orange','gold','mediumturquoise','lightgrey', 'darkgrey','teal','darkslategrey'])
+        #cmapCHM = colors.ListedColormap(['black','orange','gold','mediumturquoise','lightgrey', 'darkgrey','teal','darkslategrey'])
+        cmapCHM = colors.ListedColormap(['black','#03719c','#06b1c4','#6fe1e5','#b9ebee','mintcream','#c9c9c9','#775b5a'])
         plt.imshow(np.squeeze(ClassIm), cmap=cmapCHM)
         plt.xlabel('Validation Labels', fontweight='bold')
         
         class0_box = mpatches.Patch(color='black', label='Unclassified')
-        class1_box = mpatches.Patch(color='darkgrey', label='Snow on Ice')
-        class2_box = mpatches.Patch(color='lightgrey', label='Glacier Ice')
-        class3_box = mpatches.Patch(color='darkslategrey', label='Bedrock')
-        class4_box = mpatches.Patch(color='teal', label='Snow on Bedrock')
-        class5_box = mpatches.Patch(color='mediumturquoise', label='Mélange')
-        class6_box = mpatches.Patch(color='gold', label='Ice-berg Water')
-        class7_box = mpatches.Patch(color='orange', label='Open Water')
+        class1_box = mpatches.Patch(color='#775b5a', label='Bedrock')
+        class2_box = mpatches.Patch(color='#c9c9c9', label='Snow on Bedrock')
+        class3_box = mpatches.Patch(color='mintcream', label='Snow on Ice')
+        class4_box = mpatches.Patch(color='#b9ebee', label='Glacier Ice')
+        class5_box = mpatches.Patch(color='#6fe1e5', label='Mélange')
+        class6_box = mpatches.Patch(color='#06b1c4', label='Ice-berg Water')
+        class7_box = mpatches.Patch(color='#03719c', label='Open Water')
+
+        
+#        class0_box = mpatches.Patch(color='black', label='Unclassified')
+#        class1_box = mpatches.Patch(color='darkgrey', label='Snow on Ice')
+#        class2_box = mpatches.Patch(color='lightgrey', label='Glacier Ice')
+#        class3_box = mpatches.Patch(color='darkslategrey', label='Bedrock')
+#        class4_box = mpatches.Patch(color='teal', label='Snow on Bedrock')
+#        class5_box = mpatches.Patch(color='mediumturquoise', label='Mélange')
+#        class6_box = mpatches.Patch(color='gold', label='Ice-berg Water')
+#        class7_box = mpatches.Patch(color='orange', label='Open Water')
         
         ax=plt.gca()
         ax.legend(loc='upper center', bbox_to_anchor=(1.3, 1.02), shadow=True, handles=[class0_box, class1_box,class2_box,class3_box,class4_box,class5_box,class6_box,class7_box])
