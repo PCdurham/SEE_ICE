@@ -75,18 +75,18 @@ import glob
 
 """User data input. Fill in the info below before running"""
 
-ModelName = 'VGG16_noise_RGBNIR_50'     #should be the model name from previous run of TrainCNN.py
-TrainPath = 'D:\\Tiles50_outputs\\'  #location of the model
+ModelName = 'VGG16_noise_RGB_50'     #should be the model name from previous run of TrainCNN.py
+TrainPath = 'D:\\S2_Images\\Models\\Tiles50_outputs\\'  #location of the model
 PredictPath = 'D:\\S2_Images\\H13_09_19_3000px\\'   #Location of the images
 ScorePath = 'D:\\S2_Images\\Test\\'      #location of the output files and the model
-Experiment = 'test_3000_ks7'    #ID to append to output performance files
+Experiment = 'epochtest_3000_ks7'    #ID to append to output performance files
 ModelTuning=False
-TuningDataName='Test' #no extension
+TuningDataName='EpochTuning_BigTif_RGB_50' #no extension
 
 '''BASIC PARAMETER CHOICES'''
 UseSmote = False #Turn SMOTE-ENN resampling on and off
-TrainingEpochs = 100 #Typically this can be reduced
-Ndims = 4 # Feature Dimensions for the pre-trained CNN.
+TrainingEpochs = 200 #Typically this can be reduced
+Ndims = 3 # Feature Dimensions for the pre-trained CNN.
 NClasses = 7  #The number of classes in the data. This MUST be the same as the classes used to retrain the model
 Filters = 64
 Kernel_size = 7 
@@ -462,6 +462,7 @@ class_img = glob.glob(PredictPath + "SCLS_S2A*.png")
 for i,im in enumerate(img): 
     
     Im3D = np.int16(io.imread(im))
+    Im3D = Im3D[:,:,0:Ndims]
     #Im3D = io.imread(im)#
     #print(isinstance(Im3D,uint8))
     if len(Im3D) == 2:
