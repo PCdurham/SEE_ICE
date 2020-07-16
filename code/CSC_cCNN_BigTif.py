@@ -75,26 +75,26 @@ import glob
 
 """User data input. Fill in the info below before running"""
 
-ModelName = 'VGG16_noise_RGB_50'     #should be the model name from previous run of TrainCNN.py
+ModelName = 'VGG16_noise_RGB_TL_50'     #should be the model name from previous run of TrainCNN.py
 TrainPath = 'D:\\S2_Images\\Models\\Tiles50_outputs\\'  #location of the model
-PredictPath = 'D:\\S2_Images\\H13_09_19_3000px\\'   #Location of the images
-ScorePath = 'D:\\S2_Images\\Test\\'      #location of the output files and the model
-Experiment = 'epochtest_3000_ks7'    #ID to append to output performance files
+PredictPath = 'D:\\S2_Images\\'#H13_09_19_3000px\\#Sc01_08_19_3000px\\'   #Location of the images
+ScorePath = 'D:\\S2_Images\\' #Results_Sc01_08_19_3000px\\Tiles100_results\\RGBNIR\\Patch_1\\'      #location of the output files and the model
+Experiment = 'Scoresby_RGBTL509000_Patch7'    #ID to append to output performance files
 ModelTuning=False
-TuningDataName='EpochTuning_BigTif_RGB_50' #no extension
+TuningDataName='EpochTuning_BigTif_RGBNIR_50_HP7new' #no extension
 
 '''BASIC PARAMETER CHOICES'''
 UseSmote = False #Turn SMOTE-ENN resampling on and off
-TrainingEpochs = 200 #Typically this can be reduced
+TrainingEpochs = 150 #Typically this can be reduced
 Ndims = 3 # Feature Dimensions for the pre-trained CNN.
 NClasses = 7  #The number of classes in the data. This MUST be the same as the classes used to retrain the model
 Filters = 64
-Kernel_size = 7 
+Kernel_size = 7
 size = 50 #size of the prediction tiles
 CNNsamples= 100000 #number of subsamples to extract and train cCNN or MLP
 
 SaveClassRaster = False #If true this will save each class image to disk.  Outputs are not geocoded in this script. For GIS integration, see CnnSupervisedClassification_PyQGIS.py
-DisplayHoldout =  True #Display the results figure which is saved to disk.  
+DisplayHoldout =  False #Display the results figure which is saved to disk.  
 OutDPI = 900 #Recommended 150 for inspection 1200 for papers.  
 
 '''FILTERING OPTIONS'''
