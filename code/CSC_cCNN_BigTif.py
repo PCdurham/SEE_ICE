@@ -81,7 +81,7 @@ PredictPath = 'D:\\S2_Images\\'#H13_09_19_3000px\\#Sc01_08_19_3000px\\'   #Locat
 ScorePath = 'D:\\S2_Images\\' #Results_Sc01_08_19_3000px\\Tiles100_results\\RGBNIR\\Patch_1\\'      #location of the output files and the model
 Experiment = 'Scoresby_RGBTL509000_Patch7'    #ID to append to output performance files
 ModelTuning=False
-TuningDataName='EpochTuning_BigTif_RGBNIR_50_HP7new' #no extension
+TuningDataName='Epoch_Tuning_Test' #no extension
 
 '''BASIC PARAMETER CHOICES'''
 UseSmote = False #Turn SMOTE-ENN resampling on and off
