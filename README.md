@@ -4,7 +4,7 @@ Classification of Glacial Landscapes using CNN-Supervised Classification (CSC) (
 
 ## Description
 
-The methods and code provided here allows pixel-level semantic classification of Sentinel-2 imagery, adapted from the CSC workflow originally designed to classify aerial imagery of rivers (original source code: https://github.com/geojames/CNN-Supervised-Classification). Its intended application is the classification of glacial landscapes and was specifically trained on imagery containing marine-terminating outlet glaciers in Greenland using seven classes:
+The methods and code provided here allow pixel-level semantic classification of Sentinel-2 imagery, adapted from the CSC workflow originally designed to classify aerial imagery of rivers (original source code: https://github.com/geojames/CNN-Supervised-Classification). Its intended application is the classification of glacial landscapes and phase one CNNs have been trained specifically on imagery containing marine-terminating outlet glaciers in Greenland, using the following seven classes:
 1. Open Water
 1. Bergy Water
 1. Mélange
@@ -21,7 +21,7 @@ The methods and code provided here allows pixel-level semantic classification of
 * Numpy
 * Matplotlib
  
-We used the [Anaconda distribution](https://www.anaconda.com/products/individual) of Python 3 (written in version 3.7) which installs all the needed libraries except tensorflow.
+We used the [Anaconda distribution](https://www.anaconda.com/products/individual) of Python 3 (written in version 3.7) which installs all the required libraries except tensorflow.
 
 ## Application
 ### Training VGG16 Convolutional Neural Networks
