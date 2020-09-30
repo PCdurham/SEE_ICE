@@ -9,19 +9,18 @@ __date__ = '15 APR 2019'
 __version__ = '1.1'
 __status__ = "initial release"
 __url__ = "https://github.com/geojames/Self-Supervised-Classification"
-
-
 """
-Name:           CNNSupervisedClassification.py
-Compatibility:  Python 3.6
-Description:    Performs CNN-Supervised Image CLassification with a 
+@author: Patrice Carbonneau (edits: Melanie Marochov) 
+
+
+
+Name:           CNNSupervisedClassification_SEE_ICE.py
+Compatibility:  Python 3.7
+Description:    Performs CNN-Supervised Image Cassification with a 
                 pre-trained Convolutional Neural Network model.
                 User options are in the first section of code.
 
 Requires:       keras, numpy, pandas, matplotlib, skimage, sklearn
-
-Dev Revisions:  JTD - 19/4/19 - Updated file paths, added auto detection of
-                    river names from input images, improved image reading loops
 
 Licence:        MIT
 Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -43,9 +42,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-###############################################################################
+# =============================================================================
 
-""" Libraries"""
+""" Import Libraries"""
+
 from tensorflow.keras import regularizers
 from tensorflow.keras import optimizers
 from tensorflow.keras.models import load_model
@@ -56,60 +56,58 @@ import matplotlib.colors as colors
 import matplotlib.patches as mpatches
 from skimage import io
 import skimage.transform as T
-import pandas as pd
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Dropout, BatchNormalization,Conv2D, Flatten
+from tensorflow.keras.layers import Dense, BatchNormalization,Conv2D, Flatten
 from tensorflow.keras.utils import to_categorical
 from sklearn.model_selection import train_test_split
 from skimage.filters.rank import modal
 import os.path
 from sklearn import metrics
 from skimage.morphology import disk
-#from imblearn.combine import SMOTEENN
 import copy
 import sys
 from IPython import get_ipython #this can be removed if not using Spyder
 import glob
-###############################################################################
 
+# =============================================================================
 
-"""User data input. Fill in the info below before running"""
+""" User Input - Fill in the info below before running """
 
-ModelName = 'VGG16_noise_RGB_TL_50'     #should be the model name from previous run of TrainCNN.py
+ModelName = 'VGG16_noise_RGB_TL_50'     #should be the ModelOutputName from Phase1_VGG16 scripts
 TrainPath = 'D:\\S2_Images\\Models\\Tiles50_outputs\\'  #location of the model
-PredictPath = 'D:\\S2_Images\\'#H13_09_19_3000px\\#Sc01_08_19_3000px\\'   #Location of the images
-ScorePath = 'D:\\S2_Images\\' #Results_Sc01_08_19_3000px\\Tiles100_results\\RGBNIR\\Patch_1\\'      #location of the output files and the model
-Experiment = 'Scoresby_RGBTL509000_Patch7'    #ID to append to output performance files
-ModelTuning=False
+PredictPath = 'D:\\S2_Images\\'   #Location of the images
+ScorePath = 'D:\\S2_Images\\'     #location of the output files and the model
+Experiment = '3000_Patch7'        #ID to append to output performance files
+ModelTuning=False                 #set to True for epoch tuning
 TuningDataName='Epoch_Tuning_Test' #no extension
 
-'''BASIC PARAMETER CHOICES'''
-UseSmote = False #Turn SMOTE-ENN resampling on and off
-TrainingEpochs = 150 #Typically this can be reduced
-Ndims = 3 # Feature Dimensions for the pre-trained CNN.
-NClasses = 7  #The number of classes in the data. This MUST be the same as the classes used to retrain the model
-Filters = 64
-Kernel_size = 7
-size = 50 #size of the prediction tiles
-CNNsamples= 100000 #number of subsamples to extract and train cCNN or MLP
+""" Basic Parameter Choices """
+
+UseSmote = False      #Turn SMOTE-ENN resampling on and off.
+TrainingEpochs = 150  #Typically this can be reduced.
+Ndims = 3       #Feature Dimensions for the pre-trained CNN.
+NClasses = 7    #The number of classes in the data. This MUST be the same as the classes used to retrain the model.
+Filters = 64    #Number of filters.
+Kernel_size = 7 #Window size of patch.
+size = 50       #Size of the prediction tiles (tile size used to train phase one CNN).
+CNNsamples= 100000 #number of subsamples to extract and train cCNN or MLP.
 
 SaveClassRaster = False #If true this will save each class image to disk.  Outputs are not geocoded in this script. For GIS integration, see CnnSupervisedClassification_PyQGIS.py
 DisplayHoldout =  False #Display the results figure which is saved to disk.  
 OutDPI = 900 #Recommended 150 for inspection 1200 for papers.  
 
-'''FILTERING OPTIONS'''
+""" Filtering Options """
 #These parameters offer extra options to smooth the classification outputs.  By default they are set
 SmallestElement = 1 # Despeckle the classification to the smallest length in pixels of element remaining, just enter linear units (e.g. 3 for 3X3 pixels)
 
 
-'''MODEL PARAMETERS''' #These would usually not be edited
+""" Model Parameters """ #These would usually not be edited
 DropRate = 0.5
-ModelChoice = 2 # 2 for deep model and 3 for very deep model 
 LearningRate = 0.001
 Chatty = 1 # set the verbosity of the model training.  Use 1 at first, 0 when confident that model is well tuned
 MinSample = 250000 #minimum sample size per class before warning
 
-
+# =============================================================================
 
 # Path checks- checks for folder ending slash, adds if nessesary
 
@@ -123,11 +121,9 @@ if ('/' or "'\'") not in ScorePath[-1]:
 if os.path.exists(ScorePath) == False:
     os.mkdir(ScorePath)
 
+# =============================================================================
 
-###############################################################################
-
-
-""" HELPER FUNCTIONS SECTION """
+""" Helper Functions """
 
 # Helper function to crop images to have an integer number of tiles. No padding is used.
 def CropToTile (Im, size):
@@ -139,6 +135,7 @@ def CropToTile (Im, size):
     return Im[0:crop_dim0, 0:crop_dim1, :]
     
 # =============================================================================
+
 #Helper functions to move images in and out of tensor format
 def split_image_to_tiles(im, size):
     
@@ -165,6 +162,7 @@ def split_image_to_tiles(im, size):
     return TileTensor
 
 # =============================================================================
+
 def slide_rasters_to_tiles(im, size):
     
     if len(im.shape) ==2:
@@ -184,6 +182,7 @@ def slide_rasters_to_tiles(im, size):
 
     return TileTensor
 
+# =============================================================================
 
 def Sample_Raster_Tiles(im, CLS, size, Ndims, samples, NClasses):
     MasterTileTensor = np.zeros((1,size,size,Ndims))
@@ -206,11 +205,9 @@ def Sample_Raster_Tiles(im, CLS, size, Ndims, samples, NClasses):
         MasterTileTensor = np.concatenate((MasterTileTensor,TileTensor), axis=0)
         MasterLabel = np.concatenate((MasterLabel,Label), axis=0)
     return MasterTileTensor[1:,:,:,:], MasterLabel[1:,:]
-        
-    
-    
 
 # =============================================================================
+
 #Create the label vector
 def PrepareTensorData(ImageTile, ClassTile, size):
     #this takes the image tile tensor and the class tile tensor
@@ -235,8 +232,8 @@ def PrepareTensorData(ImageTile, ClassTile, size):
             C += 1
     return LabelVector, ClassifiedTiles
 
-
 # =============================================================================
+    
 def class_prediction_to_image(im, PredictedTiles, size):#size is size of tiny patches (in pixels)
 
     if len(im.shape) ==2:
@@ -248,7 +245,6 @@ def class_prediction_to_image(im, PredictedTiles, size):#size is size of tiny pa
      
     nTiles_height = h//size
     nTiles_width = w//size
-    #TileTensor = np.zeros((nTiles_height*nTiles_width, size,size,d))
     TileImage = np.zeros(im.shape)
     B=0
     for y in range(0, nTiles_height):
@@ -257,13 +253,13 @@ def class_prediction_to_image(im, PredictedTiles, size):#size is size of tiny pa
             y1 = np.int32(y * size)
             x2 = np.int32(x1 + size)
             y2 = np.int32(y1 + size)
-            #TileTensor[B,:,:,:] = im[y1:y2,x1:x2].reshape(size,size,d)
             TileImage[y1:y2,x1:x2] = np.argmax(PredictedTiles[B,:])#+1
             B+=1
 
     return TileImage
 
 # =============================================================================
+    
 # This is a helper function to repeat a filter on 3 colour bands.  Avoids an extra loop in the big loops below
 def ColourFilter(Image):
     med = np.zeros(np.shape(Image))
@@ -272,11 +268,9 @@ def ColourFilter(Image):
         med[:,:,b] = median(img, disk(5))
     return med
  
-
 # =============================================================================
+
 #Save classification reports to csv with Pandas
-
-
 def classification_report_csv(report, filename):
     report_data = []
     report = report.replace('avg', "")
@@ -305,7 +299,7 @@ def classification_report_csv(report, filename):
     dataframe.to_csv(filename, index = False) 
 
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        #CHANGED from original to save overall accuracy
+        # MM CHANGED from original to save overall accuracy
         #Original code:
         
 #def classification_report_csv(report, filename):
@@ -323,9 +317,9 @@ def classification_report_csv(report, filename):
 #        report_data.append(row)
 #    dataframe = pd.DataFrame.from_dict(report_data)
 #    dataframe.to_csv(filename, index = False) 
-
  
 # =============================================================================
+
 # Return a class prediction to the 1-Nclasses hierarchical classes
 def SimplifyClass(ClassImage, ClassKey):
     Iclasses = np.unique(ClassImage)
@@ -335,9 +329,8 @@ def SimplifyClass(ClassImage, ClassKey):
         ClassImage[ClassImage == Iclasses[c]] = Hclass
     return ClassImage
 
-
-
 # =============================================================================
+
 #fetches the overall avg F1 score from a classification report
 def GetF1(report):
     lines = report.split('\n')
@@ -346,7 +339,9 @@ def GetF1(report):
             dat = line.split(' ')
     
     return dat[17]
+
 #=================================================================================
+
 def TuneModelEpochs(Tiles,Labels, model,TuningDataName,Path):
         #Split the data for tuning. Use a double pass of train_test_split to shave off some data
     (trainX, testX, trainY, testY) = train_test_split(Tiles, Labels, test_size=0.2)
@@ -383,19 +378,14 @@ def TuneModelEpochs(Tiles,Labels, model,TuningDataName,Path):
     DF.to_csv(Path+TuningDataName+'.csv')
     sys.exit("Tuning Finished, adjust parameters and re-train the model")
 
+# =============================================================================
     
-
-
-###############################################################################
-    
-""" INSTANTIATE THE cCNN or MLP CLASSIFIER """ 
-   
-
+""" Instantiate the cCNN or MLP classifier """ 
 
 if Kernel_size>1:
     # create cCNN model
     model = Sequential()
-    model.add(Conv2D(Filters,Kernel_size, data_format='channels_last', input_shape=(Kernel_size, Kernel_size, Ndims))) #model.add(Conv2D(16,5, data_format='channels_last', input_shape=(5,5,4)))
+    model.add(Conv2D(Filters,Kernel_size, data_format='channels_last', input_shape=(Kernel_size, Kernel_size, Ndims))) 
     model.add(Flatten())
     model.add(Dense(512, kernel_regularizer= regularizers.l2(0.001), kernel_initializer='normal', activation='relu'))
     model.add(BatchNormalization(axis=-1, momentum=0.99, epsilon=0.001, center=True, scale=True, beta_initializer='zeros', gamma_initializer='ones', moving_mean_initializer='zeros', moving_variance_initializer='ones', beta_regularizer=None, gamma_regularizer=None, beta_constraint=None, gamma_constraint=None))
@@ -431,28 +421,20 @@ else:
     
     model.summary() 
 
-#EstimatorNN = KerasClassifier(build_fn=patchCNN_model_L2D, epochs=TrainingEpochs, batch_size=50000, verbose=Chatty)
-  
-
 # =============================================================================
 
-""" LOAD THE CONVNET MODEL """
+""" Load the pre-trained CNN """
 
-#print('Loading re-trained convnet model produced by a run of TrainCNN.py')
 print('Loading ' + ModelName + '.h5')
 FullModelPath = TrainPath + ModelName + '.h5'
 ConvNetmodel = load_model(FullModelPath)
 
-#ClassKeyPath = TrainPath + ModelName + '.csv'
-#ClassKey = pd.read_csv(ClassKeyPath)
-
 # =============================================================================
 
-""" CLASSIFY THE HOLDOUT IMAGES WITH THE CNN-SUPERVISED CLASSIFICATION """ 
+""" Classify the holdout images with CNN-Supervised Classification """ 
 # Getting Names from the files
-# Glob list fo all jpg images, get unique names form the total list
+# Glob list fo all png images, get unique names form the total list
 img = glob.glob(PredictPath+"S2A*.png")
-
 
 
 # Get training class images (covers tif and tiff file types)
@@ -463,8 +445,6 @@ for i,im in enumerate(img):
     
     Im3D = np.int16(io.imread(im))
     Im3D = Im3D[:,:,0:Ndims]
-    #Im3D = io.imread(im)#
-    #print(isinstance(Im3D,uint8))
     if len(Im3D) == 2:
         Im3D = Im3D[0]
     Class = io.imread(class_img[i])
@@ -488,7 +468,7 @@ for i,im in enumerate(img):
         
 # =============================================================================
         
-        """ APPLY THE CONVNET """
+        """ Apply the CNN """
         
         #Apply the initial VGG model to detect training areas
         print('Detecting CNN-supervised training areas')
@@ -504,14 +484,14 @@ for i,im in enumerate(img):
 
         
         
-        """ APPLY THE PATCH CNN USING SAME CLASS SYSTEM """
+        """ Apply the patch-based CNN using same system """
 
         #needed so the CSC CNN uses the same class system as VGG  
         PredictedTiles = None
 
         #Prep the pixel data into a tensor of patches
         I_Stride1Tiles, Labels = Sample_Raster_Tiles(Im3D, PredictedClass, Kernel_size, Ndims,CNNsamples, NClasses) 
-        I_Stride1Tiles = np.int16(I_Stride1Tiles) / 255 #already normalised
+        I_Stride1Tiles = np.int16(I_Stride1Tiles) / 255 
         I_Stride1Tiles = np.squeeze(I_Stride1Tiles)
         Labels[0,0]=NClasses #force at least 1 pixel to have class 7 and control 1 hot encoding. means that argument of maximum predition is the class.
         Labels1Hot = to_categorical(Labels)
@@ -544,7 +524,7 @@ for i,im in enumerate(img):
 # =============================================================================
 
 
-        """ PRODUCE CLASSIFICATION REPORTS """
+        """ Produce Classification Reports """
 
          #reshapes to a 1d vector
         Class = Class.reshape(-1,1) 
@@ -580,22 +560,20 @@ for i,im in enumerate(img):
         
 # =============================================================================
         
-        """ SAVE AND OUTPUT FIGURE RESULTS """
+        """ Save and Output Figure Results """
 
-        #Display and/or oputput figure results
+        #Display and/or output figure results
 
         for c in range(0,8): #this sets 1 pixel to each class to standardise colour display - max num add one to num of classes
             ClassIm[c,0] = c
             PredictedClass[c,0] = c
             PredictedImage[c,0] = c
-        #get_ipython().run_line_magic('matplotlib', 'qt')
         plt.figure(figsize = (12, 9.5)) #reduce these values if you have a small screen
         plt.subplot(2,2,1)
         plt.imshow(Im3D[:,:,0:3])
         plt.title('Classification Results for ' + os.path.basename(im), fontweight='bold')
         plt.xlabel('Input RGB Image', fontweight='bold')
         plt.subplot(2,2,2)
-        #cmapCHM = colors.ListedColormap(['black','orange','gold','mediumturquoise','lightgrey', 'darkgrey','teal','darkslategrey'])
         cmapCHM = colors.ListedColormap(['black','#03719c','#06b1c4','#6fe1e5','#b9ebee','mintcream','#c9c9c9','#775b5a'])
         plt.imshow(np.squeeze(ClassIm), cmap=cmapCHM)
         plt.xlabel('Validation Labels', fontweight='bold')
@@ -609,16 +587,6 @@ for i,im in enumerate(img):
         class6_box = mpatches.Patch(color='#06b1c4', label='Ice-berg Water')
         class7_box = mpatches.Patch(color='#03719c', label='Open Water')
 
-        
-#        class0_box = mpatches.Patch(color='black', label='Unclassified')
-#        class1_box = mpatches.Patch(color='darkgrey', label='Snow on Ice')
-#        class2_box = mpatches.Patch(color='lightgrey', label='Glacier Ice')
-#        class3_box = mpatches.Patch(color='darkslategrey', label='Bedrock')
-#        class4_box = mpatches.Patch(color='teal', label='Snow on Bedrock')
-#        class5_box = mpatches.Patch(color='mediumturquoise', label='Mélange')
-#        class6_box = mpatches.Patch(color='gold', label='Ice-berg Water')
-#        class7_box = mpatches.Patch(color='orange', label='Open Water')
-        
         ax=plt.gca()
         ax.legend(loc='upper center', bbox_to_anchor=(1.3, 1.02), shadow=True, handles=[class0_box, class1_box,class2_box,class3_box,class4_box,class5_box,class6_box,class7_box])
     
@@ -636,8 +604,3 @@ for i,im in enumerate(img):
             plt.close()
         
             
-
-                
-    
-
-
