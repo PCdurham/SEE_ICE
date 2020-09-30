@@ -40,7 +40,23 @@ Following the organisation of model training data, the [Phase1_VGG16_RGB-RGBNIR.
 The [TilePreparation_CSCApplicationData.py](https://github.com/MMarochov/SEE_ICE/blob/master/code/TilePreparation_CSCApplicationData.py) script allows users to tile unseen Sentinel-2 tiles and class rasters to a desired size for processing by the CSC workflow. The input images are required to be in composite band (RGBNIR) format as with the tiling script for phase one CNN training data. 
 
 #### Step 2: CSC Application
-The pre-trained phase one CNN can be implemented to create image-specific training data using the [CNNSupervisedClassification_SEE_ICE.py](https://github.com/MMarochov/SEE_ICE/blob/master/code/CNNSupervisedClassification_SEE_ICE.py) CSC script to create a pixel-level classification of unseen images of glacial landscapes. The CSC script can be applied using either a pixel- or patch-based approach of classification by altering the `Kernel_size`  variable. A Multilayer Perceptron (MLP) is used if the `Kernel_size` is set to 1, meaning classification is based on the properties of a single pixel. Alternatively, if `Kernel_size` is > 1 a compact CNN (cCNN) is applied and uses a window of pixels to predict the class of the central pixel (therefore the `Kernel_size` must always be an odd number). The script will execute and output performance metrics for each image. csv files with a CNN_ prefix give performance metrics for the phase one CNN model with F1 scores and support (# of pixels) for each class. CSC_ files give the same metrics for the final CSC result after the application of either the MLP or cCNN. A 4-part figure will also be output showing the original image, the existing class labels, the CNN classification and the final CSC classification. Optionally, a saved class raster can also be saved to disk for each processed image.
+The pre-trained phase one CNN can be implemented to create image-specific training data using the [CNNSupervisedClassification_SEE_ICE.py](https://github.com/MMarochov/SEE_ICE/blob/master/code/CNNSupervisedClassification_SEE_ICE.py) CSC script to create a pixel-level classification of unseen images of glacial landscapes. The CSC script will classify all the images in the `PredictPath` folder. If users want to apply the workflow to a specific glacier or study area, image datasets for each study area should be organised in separate folders. The CSC script can be applied using either a pixel- or patch-based approach of classification by altering the `Kernel_size`  variable. A Multilayer Perceptron (MLP) is used if the `Kernel_size` is set to 1, meaning classification is based on the properties of a single pixel. Alternatively, if `Kernel_size` is > 1 a compact CNN (cCNN) is applied and uses a window of pixels to predict the class of the central pixel (therefore the `Kernel_size` must always be an odd number). The script will execute and output performance metrics for each image. csv files with a CNN_ prefix give performance metrics for the phase one CNN model with F1 scores and support (# of pixels) for each class. CSC_ files give the same metrics for the final CSC result after the application of either the MLP or cCNN. A 4-part figure will also be output showing the original image, the existing class labels, the CNN classification and the final CSC classification. Optionally, a saved class raster can also be saved to disk for each processed image (e.g. Figure 1).
+
+
+
+![CSC_HelehimS2A5_Patch 7](https://user-images.githubusercontent.com/60142411/94746470-ad173100-0374-11eb-93ec-99b80870c6be.png)
+_**Figure 1: CSC output showing a sample image of Helheim Glacier, eastern Greenland.**_ 
+
+## Authors
+* Patrice Carbonneau
+* Melanie Marochov
+
+## Citation
+CSC workflow: 
+Carbonneau, P. E., Dugdale, S. J., Breckon, T. P., Dietrich, J. T., Fonstad, M. A., Miyamoto, H. and Woodget, A. S.: Adopting deep learning methods for airborne RGB fluvial scene classification, Remote Sensing of Environment, 251, 112107, doi:https://doi.org/10.1016/j.rse.2020.112107, 2020.
+
+The work for CSC adaptation for glacial landscapes containing marine terminating outlet glaciers in Greenland has not yet been published, but a poster is available [here](https://presentations.copernicus.org/EGU2020/EGU2020-19996_presentation.pdf). 
+
 
 
 
