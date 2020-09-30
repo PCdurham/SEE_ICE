@@ -7,7 +7,7 @@ Created on Wed Jan  8 15:20:26 2020
 
 
 Name:           Phase 1 VGG16 - Transfer Learning (RGB)
-Compatibility:  Python 3.6
+Compatibility:  Python 3.7
 Description:    VGG16 model using transfer learning with 3 input bands, meant
                 to be used with RGB imagery.
 
