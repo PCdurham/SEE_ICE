@@ -5,7 +5,7 @@ Created on Wed Jan 15 12:02:30 2020
 
 
 Name:           Tile Preparation - for CSC Application
-Compatibility:  Python 3.6
+Compatibility:  Python 3.7
 Description:    Tiles images into manageable 4D stacks of image bands (R,G,B,NIR)
                 for applying the CNN-Supervised Classification (CSC) workflow.
 

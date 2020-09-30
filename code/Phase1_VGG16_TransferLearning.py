@@ -2,14 +2,15 @@
 """
 Created on Wed Jan  8 15:20:26 2020
 
-@authors: Melanie Marochov and Patrice Carbonneau
+@author: Melanie Marochov and Patrice Carbonneau
 
 
-Name:           Phase 1 VGG16 - RGB/RGBNIR
-Compatibility:  Python 3.6
-Description:    VGG16 model with 3 or 4 input bands, meant to be used with RGB 
-                or RGB+NIR imagery. Note that transfer learning is no longer an
-                option.
+
+Name:           Phase 1 VGG16 - Transfer Learning (RGB)
+Compatibility:  Python 3.7
+Description:    VGG16 model using transfer learning with 3 input bands, meant
+                to be used with RGB imagery.
+
 
 """
 
@@ -19,42 +20,39 @@ Description:    VGG16 model with 3 or 4 input bands, meant to be used with RGB
 
 import numpy as np
 from tensorflow.keras import layers
-from tensorflow.keras import optimizers
+from tensorflow.keras import models
 from tensorflow.keras import regularizers
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Flatten, Convolution2D, MaxPooling2D, Dropout
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import to_categorical
-import glob
-import random
-from skimage import io
-from matplotlib import pyplot as plt
 import sys
+import glob
+from skimage import io
+import matplotlib.pyplot as plt
+from tensorflow.keras.applications.vgg16 import VGG16
+import random
 
 # =============================================================================
 
 """ User Inputs - Fill in the info below before running """
 
 #Trained model will also be written out to the training folder
-train_path = 'E:\\See_Ice\\Tiles100\\Train' #where training tiles are located
-valid_path = 'E:\\See_Ice\\Tiles100\\Valid' #where validation tiles are located
+train_path = 'E:\\See_Ice\\Tiles100\\Train'    #where training tiles are located
+valid_path = 'E:\\See_Ice\\Tiles100\\Valid'    #where validation tiles are located
 TileSize = 100  #size of tiles created using TilePreparation_CNNTrainingData 
-Nbands=3    #number of input bands (3 for RGB or 4 for RGB+NIR)
-Nclasses=7  #number of semantic classes
-BaseFilters=32  #number of filters
-training_epochs = 15    #number of epochs model will iterate over training data
-ImType='.png'   #png, jpg, or tif
+training_epochs = 6     #number of epochs model will iterate over training data
 ModelTuning = False     #set to True if you need to tune the training epochs. Remember to lengthen the epochs
-TuningFigureName = 'Tune_VGG16_noise_RGB_75'  #name of the tuning figure, no need to add the path
+TuningFigureName = 'Tune_VGG16_noise_RGB_TL_75'   #name of the tuning figure, no need to add the path
 learning_rate = 0.0001
 verbosity = 1
-ModelOutputName = 'VGG16_noise_RGB_100'  #name of trained model
+ModelOutputName = 'VGG16_noise_RGB_TL_75'  #name of saved model
+ImType='.png' #png, jpg, or tif
+Nbands=3 #can only be 3 if using this script with imagenet weights
 
 # =============================================================================
 
 """ Helper Functions """
-
-
+   
+    
 def CompileTensor(path, size, Nbands, ImType):
     MasterTensor = np.zeros((1,size,size,Nbands))
     MasterLabels = np.zeros((1,1))
@@ -75,57 +73,43 @@ def CompileTensor(path, size, Nbands, ImType):
         MasterLabels=np.concatenate((MasterLabels,labels), axis=0)
         print('Processed class '+str(c))
     return MasterTensor[1:,:,:,:], MasterLabels[1:,:]
-
+    
     
 # =============================================================================
 # =============================================================================
 
-""" BUILD FINE-TUNED VGG16 MODEL """ 
+""" BUILD FINE-TUNED VGG16 MODEL """  
 
-# ============================================================================= 
+# =============================================================================
 
 """Convnet section"""
 
 #Setup the convnet and add dense layers for the big tile model
-model = Sequential()
-model.add(Convolution2D(2*BaseFilters, 3, input_shape=(TileSize, TileSize, Nbands), data_format='channels_last', activation='relu', padding='same'))
-model.add(Convolution2D(2*BaseFilters, 3, activation='relu', padding='same'))
-model.add(MaxPooling2D((2,2), strides=(2,2)))
+conv_base = VGG16(weights='imagenet', include_top = False, input_shape = (TileSize,TileSize,Nbands)) 
+conv_base.summary()
+model = models.Sequential()
+model.add(conv_base)
+model.add(layers.Flatten())
+model.add(layers.Dense(512, activation='relu', kernel_regularizer= regularizers.l2(0.001)))
+model.add(layers.Dropout(0.5))
+model.add(layers.Dense(256, activation='relu', kernel_regularizer=regularizers.l2(0.001)))
+model.add(layers.Dense(8, activation='softmax'))
 
-
-model.add(Convolution2D(4*BaseFilters, 3, activation='relu', padding='same'))
-model.add(Convolution2D(4*BaseFilters, 3, activation='relu', padding='same'))
-model.add(MaxPooling2D((2,2), strides=(2,2)))
-
-model.add(Convolution2D(8*BaseFilters, 3, activation='relu', padding='same'))
-model.add(Convolution2D(8*BaseFilters, 3, activation='relu', padding='same'))
-model.add(Convolution2D(8*BaseFilters, 3, activation='relu', padding='same'))
-model.add(MaxPooling2D((2,2), strides=(2,2)))
-
-
-model.add(Convolution2D(16*BaseFilters, 3, activation='relu', padding='same'))
-model.add(Convolution2D(16*BaseFilters, 3, activation='relu', padding='same'))
-model.add(Convolution2D(16*BaseFilters, 3, activation='relu', padding='same'))
-model.add(MaxPooling2D((2,2), strides=(2,2)))
-
-
-model.add(Convolution2D(16*BaseFilters, 3, activation='relu', padding='same'))
-model.add(Convolution2D(16*BaseFilters, 3, activation='relu', padding='same'))
-model.add(Convolution2D(16*BaseFilters, 3, activation='relu', padding='same'))
-model.add(MaxPooling2D((2,2), strides=(2,2)))
-
-
-model.add(Flatten())
-model.add(Dense(512, activation='relu',kernel_regularizer= regularizers.l2(0.001)))
-model.add(Dropout(0.5))
-model.add(Dense(256, activation='relu',kernel_regularizer= regularizers.l2(0.001)))
-model.add(layers.Dense(Nclasses+1, activation='softmax'))
-
+#LabelTensor.shape[1]
+#Freeze all or part of the convolutional base to keep imagenet weigths intact
+set_trainable = False
+for layer in conv_base.layers:
+    if (layer.name == 'block5_conv3') or (layer.name == 'block5_conv2') or (layer.name == 'block5_conv1'):# or (layer.name == 'block4_conv3'):
+        set_trainable = True
+    if set_trainable:
+        layer.trainable = True
+    else:
+        layer.trainable = False
+        
 
 #Tune an optimiser
-Optim = optimizers.Adam(lr=learning_rate, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=True)
 model.compile(Adam(lr=learning_rate), loss= 'categorical_crossentropy', metrics=['accuracy'])
-model.summary()  
+model.summary() 
 
 # =============================================================================
 
@@ -135,10 +119,11 @@ Trainlabels=to_categorical(TrainLabels_sparse)
 if ModelTuning:
     ValidTensor, ValidLabels_sparse = CompileTensor(valid_path, TileSize, Nbands, ImType)
     ValidLabels=to_categorical(ValidLabels_sparse)
-    
+
 # =============================================================================
 
 """ Train or tune VGG16 model """
+
 if ModelTuning:
     #Split the data for tuning. Use a double pass of train_test_split to shave off some data
 
