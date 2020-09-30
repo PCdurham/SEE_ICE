@@ -6,7 +6,7 @@ Created on Wed Jan  8 15:20:26 2020
 
 
 Name:           Phase 1 VGG16 - RGB/RGBNIR
-Compatibility:  Python 3.6
+Compatibility:  Python 3.7
 Description:    VGG16 model with 3 or 4 input bands, meant to be used with RGB 
                 or RGB+NIR imagery. Note that transfer learning is no longer an
                 option.
