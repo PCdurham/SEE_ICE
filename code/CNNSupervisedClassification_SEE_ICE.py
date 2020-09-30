@@ -73,13 +73,13 @@ import glob
 
 """ User Input - Fill in the info below before running """
 
-ModelName = 'VGG16_noise_RGB_TL_50'     #should be the ModelOutputName from Phase1_VGG16 scripts
-TrainPath = 'D:\\S2_Images\\Models\\Tiles50_outputs\\'  #location of the model
-PredictPath = 'D:\\S2_Images\\'   #Location of the images
-ScorePath = 'D:\\S2_Images\\'     #location of the output files and the model
-Experiment = '3000_Patch7'        #ID to append to output performance files
-ModelTuning=False                 #set to True for epoch tuning
-TuningDataName='Epoch_Tuning_Test' #no extension
+ModelName = 'empty'     #should be the ModelOutputName from Phase1_VGG16 scripts
+TrainPath = 'path'      #location of the model - use \\ instead of \ in path names
+PredictPath = 'path'   #Location of the images
+ScorePath = 'path'     #location of the output files and the model
+Experiment = 'empty'        #ID to append to output performance files
+ModelTuning = False                 #set to True for epoch tuning
+TuningDataName = 'empty' #no extension
 
 """ Basic Parameter Choices """
 
@@ -90,7 +90,7 @@ NClasses = 7    #The number of classes in the data. This MUST be the same as the
 Filters = 64    #Number of filters.
 Kernel_size = 7 #Window size of patch.
 size = 50       #Size of the prediction tiles (tile size used to train phase one CNN).
-CNNsamples= 100000 #number of subsamples to extract and train cCNN or MLP.
+CNNsamples = 100000 #number of subsamples to extract and train cCNN or MLP.
 
 SaveClassRaster = False #If true this will save each class image to disk.  Outputs are not geocoded in this script. For GIS integration, see CnnSupervisedClassification_PyQGIS.py
 DisplayHoldout =  False #Display the results figure which is saved to disk.  
