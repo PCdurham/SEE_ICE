@@ -5,59 +5,53 @@ Created on Wed Jan  8 15:20:26 2020
 @author: Melanie Marochov and Patrice Carbonneau
 
 
-VGG16 ATTEMPT 2
+
+Name:           Phase 1 VGG16 - Transfer Learning (RGB)
+Compatibility:  Python 3.6
+Description:    VGG16 model using transfer learning with 3 input bands, meant
+                to be used with RGB imagery.
+
 
 """
 
 # =============================================================================
-""" INITIAL SET-UP """
+
+""" Import Libraries """
 
 import numpy as np
 from tensorflow.keras import layers
 from tensorflow.keras import models
-#from tensorflow.keras import optimizers
 from tensorflow.keras import regularizers
-#from tensorflow.keras import backend as K
-#from tensorflow.keras.models import Sequential
-#from tensorflow.keras.layers import Activation
-#from tensorflow.keras.layers import Dense, Flatten
 from tensorflow.keras.optimizers import Adam
-#from tensorflow.keras.metrics import categorical_crossentropy
-#from tensorflow.keras.preprocessing.image import ImageDataGenerator
-#from tensorflow.keras.layers import BatchNormalization
 from tensorflow.keras.utils import to_categorical
-#from tensorflow.keras.layers.convolutional import *
 import sys
-#from tensorflow.keras.layers import Conv2D
 import glob
 from skimage import io
-#from sklearn import metrics
 import matplotlib.pyplot as plt
-#import itertools
 from tensorflow.keras.applications.vgg16 import VGG16
-#from sklearn.preprocessing import MultiLabelBinarizer
-#from sklearn.model_selection import train_test_split
 import random
-# =============================================================================
+
 # =============================================================================
 
-"""USER INPUTS"""
+""" User Inputs - Fill in the info below before running """
 
-#Trained model and class key will also be written out to the training folder
-train_path = 'E:\\See_Ice\\Tiles100\\Train'
-valid_path = 'E:\\See_Ice\\Tiles100\\Valid'
-#test_path = 'G:\\SEE_ICE\\TileSize_50\\TileSize_50\\\Test'
-TileSize = 100
-training_epochs = 6
-ModelTuning = False #set to True if you need to tune the training epochs. Remember to lengthen the epochs
-TuningFigureName = 'Tune_VGG16_noise_RGB_TL_75'#name of the tuning figure, no need to add the path
+#Trained model will also be written out to the training folder
+train_path = 'E:\\See_Ice\\Tiles100\\Train'    #where training tiles are located
+valid_path = 'E:\\See_Ice\\Tiles100\\Valid'    #where validation tiles are located
+TileSize = 100  #size of tiles created using TilePreparation_CNNTrainingData 
+training_epochs = 6     #number of epochs model will iterate over training data
+ModelTuning = False     #set to True if you need to tune the training epochs. Remember to lengthen the epochs
+TuningFigureName = 'Tune_VGG16_noise_RGB_TL_75'   #name of the tuning figure, no need to add the path
 learning_rate = 0.0001
 verbosity = 1
-ModelOutputName = 'VGG16_noise_RGB_TL_75'  #where the model will be saved
-ImType='.png' #png, jpg or tif
+ModelOutputName = 'VGG16_noise_RGB_TL_75'  #name of saved model
+ImType='.png' #png, jpg, or tif
 Nbands=3 #can only be 3 if using this script with imagenet weights
 
-    
+# =============================================================================
+
+""" Helper Functions """
+   
     
 def CompileTensor(path, size, Nbands, ImType):
     MasterTensor = np.zeros((1,size,size,Nbands))
@@ -86,11 +80,12 @@ def CompileTensor(path, size, Nbands, ImType):
 
 """ BUILD FINE-TUNED VGG16 MODEL """  
 
-##########################################################
+# =============================================================================
+
 """Convnet section"""
-##########################################################
+
 #Setup the convnet and add dense layers for the big tile model
-conv_base = VGG16(weights='imagenet', include_top = False, input_shape = (TileSize,TileSize,Nbands)) #used to be input_shape = (224,224,3)
+conv_base = VGG16(weights='imagenet', include_top = False, input_shape = (TileSize,TileSize,Nbands)) 
 conv_base.summary()
 model = models.Sequential()
 model.add(conv_base)
@@ -98,23 +93,19 @@ model.add(layers.Flatten())
 model.add(layers.Dense(512, activation='relu', kernel_regularizer= regularizers.l2(0.001)))
 model.add(layers.Dropout(0.5))
 model.add(layers.Dense(256, activation='relu', kernel_regularizer=regularizers.l2(0.001)))
-#Using a sigmoid for this tree shadow  / non-tree shadow application. Switch to softmax if more objects
 model.add(layers.Dense(8, activation='softmax'))
 
 #LabelTensor.shape[1]
 #Freeze all or part of the convolutional base to keep imagenet weigths intact
-#conv_base.trainable = False
 set_trainable = False
 for layer in conv_base.layers:
-    #print(layer.name)
     if (layer.name == 'block5_conv3') or (layer.name == 'block5_conv2') or (layer.name == 'block5_conv1'):# or (layer.name == 'block4_conv3'):
         set_trainable = True
     if set_trainable:
         layer.trainable = True
     else:
         layer.trainable = False
-
-         
+        
 
 #Tune an optimiser
 model.compile(Adam(lr=learning_rate), loss= 'categorical_crossentropy', metrics=['accuracy'])
@@ -131,9 +122,7 @@ if ModelTuning:
 
 # =============================================================================
 
-""" TRAIN OR TUNE VGG16 MODEL """
-
-
+""" Train or tune VGG16 model """
 
 if ModelTuning:
     #Split the data for tuning. Use a double pass of train_test_split to shave off some data
@@ -173,19 +162,10 @@ if ModelTuning:
 #To train the model - fits the model to our batches. Epochs should be number of images in training batches divided by number of batches
 model.fit(TrainTensor, Trainlabels,  batch_size=50, epochs=training_epochs, verbose=1)
 
-# =============================================================================
-
 
 # =============================================================================
 
-""" SAVE THE MODEL """
+""" Save the trained model """
 
 FullModelPath = train_path + ModelOutputName +'.h5'
 model.save(FullModelPath)
-
-
-#PredictedClass = class_prediction_to_image(im, predictions, size)
-#plt.imshow(predicted)
-#plt.imshow(image) #image is the name of function
-
-
