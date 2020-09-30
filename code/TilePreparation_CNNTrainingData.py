@@ -5,7 +5,7 @@ Created on Wed Jan 15 12:02:30 2020
 
 
 Name:           Tile Preparation
-Compatibility:  Python 3.6
+Compatibility:  Python 3.7
 Description:    Tiles images into 4D stacks of image bands (R,G,B,NIR)
                 for training and validating the Convolutional neural network
                 (CNN) in phase one of CNN-Supervised Classification (CSC).
