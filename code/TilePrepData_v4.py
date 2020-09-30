@@ -25,7 +25,7 @@ ImFolder = 'E:\\Masters\\Helheim19\\g_13_09\\' #location of image to be tiled
 DataFolder = 'D:\\S2_Images\\' #folder location for output tiles
 RootName = 'S2A'
 
-size = 2240 #size (in pixels) of output tiles
+size = 3000 #size (in pixels) of output tiles
 LastTile =0 #last tile number from previous image
 
 # =============================================================================
