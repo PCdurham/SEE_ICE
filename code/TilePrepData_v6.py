@@ -4,21 +4,24 @@ Created on Wed Jan 15 12:02:30 2020
 @author: Melanie Marochov and Patrice Carbonneau
 
 
-    TILE PREPARATION
+Name:           Tile Preparation
+Compatibility:  Python 3.6
+Description:    Tiles images into 4D stacks of image bands (R,G,B,NIR)
+                for training and validating the Convolutional neural network
+                (CNN) in phase one of CNN-Supervised Classification (CSC).
+
 
 """
 # =============================================================================
 
-"""Import Libraries"""
+""" Import Libraries """
 
 import numpy as np
 import skimage.io as IO
-
 import glob
 # =============================================================================
 
-"""User Input"""
-
+""" User Input - Fill in the info below before running """
 
 ImFolder = 'E:\\See_Ice\\TrainData\\' #location of image to be tiled
 DataFolder = 'E:\\See_Ice\\Tiles100\\' #folder location for output tiles
@@ -27,11 +30,10 @@ stride = 35 #number of pixels the tiler slides before extracting another tile
 
 
 # =============================================================================
-###############################################################################
 
-"""Functions"""
+""" Helper Functions """
 
-#### CHECKLABEL FUNCTION #### 
+    # CheckLabel Function 
 #Checks class percentage of each tile and creates the label vector.
 #Tiles which contain less than 10% of pure class, or a mixture of classes are rejected
 #Label vectors are produced from tiles which contain >=90% pure class.
@@ -49,11 +51,13 @@ def CheckLabel(ClassTile):
    
     return Valid #Given a classification tile, runs the check for class label
 
-###############################################################################
+# =============================================================================
     
-# Helper function to crop images to have an integer number of tiles. No padding is used.
+    # CropToTile Function
+# Crops images to have an integer number of tiles. No padding is used.
+    
 def CropToTile (Im, size):
-    if len(Im.shape) == 2:#handle greyscale
+    if len(Im.shape) == 2: #handle greyscale
         Im = Im.reshape(Im.shape[0], Im.shape[1],1)
 
     crop_dim0 = size * (Im.shape[0]//size)
@@ -61,8 +65,11 @@ def CropToTile (Im, size):
     return Im[0:crop_dim0, 0:crop_dim1, :]
     
 
-###############################################################################
-    #Save image tiles to disk based on their associated class 
+# =============================================================================
+
+    # SaveTile Function
+#Save image tiles to disk based on their associated class 
+    
 def save_tile(I, LabelVector, CurrentTile, DataFolder, size, stride):
     PickFolder = np.random.uniform() #Picks a random number to allocate isolated tiles to folder (uniform between 0 and 1)
     TileName = 'T'+str(CurrentTile) + '.png'
@@ -109,13 +116,12 @@ def save_tile(I, LabelVector, CurrentTile, DataFolder, size, stride):
  
         elif LabelVector  == 7:
             IO.imsave(DataFolder+'Valid'+'\\C7\\'+TileName, I)
+
  
-
-
-####################################################################################
+# =============================================================================
 # =============================================================================
 
-"""Processing"""
+""" Processing """
 
 img = glob.glob(ImFolder + "clip*.*")
 #Tile sliding
@@ -137,7 +143,7 @@ for i in range(len(img)):
         h, w, d = im.shape
     
     
-    for y in range(0, h-size, stride): #from first pixel to last pixel where 224 will fit, in steps of stride
+    for y in range(0, h-size, stride): #from first pixel to last pixel where tile size will fit, in steps of stride
         for x in range(0, w-size, stride):
             LabelTile = CroppedClassRaster[y:y+size,x:x+size] #Cropped class raster to tile size
             Label = np.median(CroppedClassRaster[y:y+size,x:x+size].reshape(1,-1)) #class expressed as a single number for an individual tile
