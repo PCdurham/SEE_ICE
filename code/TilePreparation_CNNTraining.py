@@ -19,6 +19,7 @@ Description:    Tiles images into 4D stacks of image bands (R,G,B,NIR)
 import numpy as np
 import skimage.io as IO
 import glob
+
 # =============================================================================
 
 """ User Input - Fill in the info below before running """
