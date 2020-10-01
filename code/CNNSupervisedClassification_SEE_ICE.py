@@ -75,11 +75,11 @@ import glob
 
 ModelName = 'empty'     #should be the ModelOutputName from Phase1_VGG16 scripts
 TrainPath = 'path'      #location of the model - use \\ instead of \ in path names
-PredictPath = 'path'   #Location of the images
-ScorePath = 'path'     #location of the output files and the model
-Experiment = 'empty'        #ID to append to output performance files
-ModelTuning = False                 #set to True for epoch tuning
-TuningDataName = 'empty' #no extension
+PredictPath = 'path'    #Location of the images
+ScorePath = 'path'      #location of the output files and the model
+Experiment = 'empty'    #ID to append to output performance files
+ModelTuning = False     #set to True for epoch tuning
+TuningDataName = 'empty'#no extension
 
 """ Basic Parameter Choices """
 
