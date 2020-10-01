@@ -24,8 +24,8 @@ import glob
 
 """ User Input - Fill in the info below before running """
 
-ImFolder = 'E:\\See_Ice\\TrainData\\' #location of image to be tiled
-DataFolder = 'E:\\See_Ice\\Tiles100\\' #folder location for output tiles
+ImFolder = 'path_e.g_E:\\See_Ice\\TrainData\\' #location of image to be tiled
+DataFolder = 'path' #folder location for output tiles
 size = 100 #size (in pixels) of output tiles
 stride = 35 #number of pixels the tiler slides before extracting another tile
 
