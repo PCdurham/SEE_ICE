@@ -36,8 +36,8 @@ import sys
 """ User Inputs - Fill in the info below before running """
 
 #Trained model will also be written out to the training folder
-train_path = 'E:\\See_Ice\\Tiles100\\Train' #where training tiles are located
-valid_path = 'E:\\See_Ice\\Tiles100\\Valid' #where validation tiles are located
+train_path = 'path_e.g_E:\\See_Ice\\Train' #where training tiles are located
+valid_path = 'path' #where validation tiles are located
 TileSize = 100  #size of tiles created using TilePreparation_CNNTrainingData 
 Nbands=3    #number of input bands (3 for RGB or 4 for RGB+NIR)
 Nclasses=7  #number of semantic classes
@@ -45,10 +45,10 @@ BaseFilters=32  #number of filters
 training_epochs = 15    #number of epochs model will iterate over training data
 ImType='.png'   #png, jpg, or tif
 ModelTuning = False     #set to True if you need to tune the training epochs. Remember to lengthen the epochs
-TuningFigureName = 'Tune_VGG16_noise_RGB_75'  #name of the tuning figure, no need to add the path
+TuningFigureName = 'empty'  #name of the tuning figure, no need to add the path
 learning_rate = 0.0001
 verbosity = 1
-ModelOutputName = 'VGG16_noise_RGB_100'  #name of trained model
+ModelOutputName = 'empty'  #name of trained model
 
 # =============================================================================
 
