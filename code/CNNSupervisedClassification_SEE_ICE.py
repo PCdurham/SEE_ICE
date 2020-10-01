@@ -85,16 +85,16 @@ TuningDataName = 'empty'#no extension
 
 UseSmote = False      #Turn SMOTE-ENN resampling on and off.
 TrainingEpochs = 150  #Typically this can be reduced.
-Ndims = 3       #Feature Dimensions for the pre-trained CNN.
-NClasses = 7    #The number of classes in the data. This MUST be the same as the classes used to retrain the model.
-Filters = 64    #Number of filters.
-Kernel_size = 7 #Window size of patch.
-size = 50       #Size of the prediction tiles (tile size used to train phase one CNN).
-CNNsamples = 100000 #number of subsamples to extract and train cCNN or MLP.
+Ndims = 3             #Feature Dimensions for the pre-trained CNN.
+NClasses = 7          #The number of classes in the data. This MUST be the same as the classes used to retrain the model.
+Filters = 64          #Number of filters.
+Kernel_size = 7       #Window size of patch.
+size = 50             #Size of the prediction tiles (tile size used to train phase one CNN).
+CNNsamples = 100000   #number of subsamples to extract and train cCNN or MLP.
 
 SaveClassRaster = False #If true this will save each class image to disk.  Outputs are not geocoded in this script. For GIS integration, see CnnSupervisedClassification_PyQGIS.py
 DisplayHoldout =  False #Display the results figure which is saved to disk.  
-OutDPI = 900 #Recommended 150 for inspection 1200 for papers.  
+OutDPI = 900            #Recommended 150 for inspection 1200 for papers.  
 
 """ Filtering Options """
 #These parameters offer extra options to smooth the classification outputs.  By default they are set
