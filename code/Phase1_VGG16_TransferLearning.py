@@ -36,15 +36,15 @@ import random
 """ User Inputs - Fill in the info below before running """
 
 #Trained model will also be written out to the training folder
-train_path = 'E:\\See_Ice\\Tiles100\\Train'    #where training tiles are located
-valid_path = 'E:\\See_Ice\\Tiles100\\Valid'    #where validation tiles are located
-TileSize = 100  #size of tiles created using TilePreparation_CNNTrainingData 
+train_path = 'path_e.g_E:\\See_Ice\\Train'    #where training tiles are located
+valid_path = 'path'     #where validation tiles are located - use \\ instead of \ in path names
+TileSize = 100          #size of tiles created using TilePreparation_CNNTrainingData 
 training_epochs = 6     #number of epochs model will iterate over training data
 ModelTuning = False     #set to True if you need to tune the training epochs. Remember to lengthen the epochs
-TuningFigureName = 'Tune_VGG16_noise_RGB_TL_75'   #name of the tuning figure, no need to add the path
+TuningFigureName = 'empty'   #name of the tuning figure, no need to add the path
 learning_rate = 0.0001
 verbosity = 1
-ModelOutputName = 'VGG16_noise_RGB_TL_75'  #name of saved model
+ModelOutputName = 'empty'  #name of saved model
 ImType='.png' #png, jpg, or tif
 Nbands=3 #can only be 3 if using this script with imagenet weights
 
