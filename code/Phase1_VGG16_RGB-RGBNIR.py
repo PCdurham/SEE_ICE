@@ -37,7 +37,7 @@ import sys
 
 #Trained model will also be written out to the training folder
 train_path = 'path_e.g_E:\\See_Ice\\Train' #where training tiles are located
-valid_path = 'path' #where validation tiles are located
+valid_path = 'path' #where validation tiles are located - use \\ instead of \ in path names
 TileSize = 100  #size of tiles created using TilePreparation_CNNTrainingData 
 Nbands=3    #number of input bands (3 for RGB or 4 for RGB+NIR)
 Nclasses=7  #number of semantic classes
