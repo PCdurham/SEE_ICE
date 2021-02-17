@@ -24,3 +24,5 @@ for d in range(1, len(DatList)):
 sns.histplot(data=MasterData, binwidth=(10))
 
 e95=np.percentile(MasterData,95)
+print('95th percentile error= '+str(int(e95)))
+print('median error '+str(int(np.median(MasterData))))
