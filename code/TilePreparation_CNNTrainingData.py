@@ -24,10 +24,10 @@ import glob
 
 """ User Input - Fill in the info below before running """
 
-ImFolder = 'path'    #location of image to be tiled e.g. 'E:\\See_Ice\\TrainData\\'.
-DataFolder = 'path'  #folder location for output tiles.
+ImFolder = '/media/patrice/DataDrive/SEE_ICE/RawData/'    #location of image to be tiled e.g. 'E:\\See_Ice\\TrainData\\'.
+DataFolder = '/media/patrice/DataDrive/SEE_ICE/'  #folder location for output tiles.
 size = 100           #size (in pixels) of output tiles.
-stride = 35          #number of pixels the tiler slides before extracting another tile.
+stride = 10         #number of pixels the tiler slides before extracting another tile.
 
 
 # =============================================================================
@@ -72,29 +72,29 @@ def CropToTile (Im, size):
 #Save image tiles to disk based on their associated class 
     
 def save_tile(I, LabelVector, CurrentTile, DataFolder, size, stride):
-    PickFolder = np.random.uniform() #Picks a random number to allocate isolated tiles to folder (uniform between 0 and 1).
-    TileName = 'T'+str(CurrentTile) + '.png'
+    PickFolder = 0# np.random.uniform() #Picks a random number to allocate isolated tiles to folder (uniform between 0 and 1).
+    TileName = 'T'+str(CurrentTile) + '.tif'
     if PickFolder <= 0.95: #For distributing in train and test folders.
         if LabelVector== 1:
-            IO.imsave(DataFolder+'Train'+'\\C1\\'+TileName, I)
+            IO.imsave(DataFolder+'Train'+'/C1/'+TileName, I)
 
         elif LabelVector== 2:
-            IO.imsave(DataFolder+'Train'+'\\C2\\'+TileName, I)
+            IO.imsave(DataFolder+'Train'+'/C2/'+TileName, I)
   
         elif LabelVector  == 3:
-            IO.imsave(DataFolder+'Train'+'\\C3\\'+TileName, I)
+            IO.imsave(DataFolder+'Train'+'/C3/'+TileName, I)
 
         elif LabelVector  == 4:
-            IO.imsave(DataFolder+'Train'+'\\C4\\'+TileName, I)
+            IO.imsave(DataFolder+'Train'+'/C4/'+TileName, I)
 
         elif LabelVector  == 5:
-            IO.imsave(DataFolder+'Train'+'\\C5\\'+TileName, I)
+            IO.imsave(DataFolder+'Train'+'/C5/'+TileName, I)
  
         elif LabelVector  == 6:
-            IO.imsave(DataFolder+'Train'+'\\C6\\'+TileName, I)
+            IO.imsave(DataFolder+'Train'+'/C6/'+TileName, I)
 
         elif LabelVector  == 7:
-            IO.imsave(DataFolder+'Train'+'\\C7\\'+TileName, I)
+            IO.imsave(DataFolder+'Train'+'/C7/'+TileName, I)
 
     elif (PickFolder > 0.95):
         if LabelVector  == 1:
@@ -131,7 +131,7 @@ for i in range(len(img)):
     #Load image
 
     ImName=img[i]
-    TrainName=ImFolder +'Train_'+ImName[-12:]
+    TrainName=ImFolder +'Train_'+ImName[-13:]
     Im3D = IO.imread(ImName)
     ClassRaster = IO.imread(TrainName)
     im = CropToTile (Im3D, size)
@@ -149,8 +149,8 @@ for i in range(len(img)):
             LabelTile = CroppedClassRaster[y:y+size,x:x+size] #Cropped class raster to tile size.
             Label = np.median(CroppedClassRaster[y:y+size,x:x+size].reshape(1,-1)) #Class expressed as a single number for an individual tile.
             Valid = CheckLabel(LabelTile)
-            Tile = im[y:y+size,x:x+size,:].reshape(size,size,d) #Image tile.
-            Tile = np.uint8(255*Tile/16384)
+            Tile = np.int16(im[y:y+size,x:x+size,:].reshape(size,size,d)) #Image tile.
+            #Tile = np.uint8(255*Tile/16384)
             if Valid: #==true i.e. if the tile has a dominant class assigned to it.
                 #raw tile
                 I=Tile
@@ -158,17 +158,17 @@ for i in range(len(img)):
                 CurrentTile+=1 #Current tile plus 1 - so won't overwrite previously saved file.
                 #90 rotation + noise.
                 Tile=np.rot90(Tile)
-                I=Tile+np.uint8(3*np.random.uniform(size=Tile.shape)) #Rotates tile 90 degrees + noise from 0-2.
+                I=Tile+np.int16(10*np.random.uniform(size=Tile.shape)) #Rotates tile 90 degrees + noise from 0-2.
                 save_tile(I, Label, CurrentTile, DataFolder, size, stride) #Save the tile to disk.
                 CurrentTile+=1 #Saves rotated tile and does not overwrite previously saved files.
                 #180 rotation + noise.
                 Tile=np.rot90(Tile)
-                I=Tile+np.uint8(3*np.random.uniform(size=Tile.shape)) #Rotates tile 90 degrees+ noise from 0-2.
+                I=Tile+np.int16(10*np.random.uniform(size=Tile.shape)) #Rotates tile 90 degrees+ noise from 0-2.
                 save_tile(I, Label, CurrentTile, DataFolder, size, stride) #Save the tile to disk.
                 CurrentTile+=1 #Saves rotated tile and does not overwrite previously saved files.
                #270 rotation + noise.
                 Tile=np.rot90(Tile)
-                I=Tile+np.uint8(3*np.random.uniform(size=Tile.shape)) #Rotates tile 90 degrees+ noise from 0-2.
+                I=Tile+np.int16(10*np.random.uniform(size=Tile.shape)) #Rotates tile 90 degrees+ noise from 0-2.
                 save_tile(I, Label, CurrentTile, DataFolder, size, stride) #Save the tile to disk.
                 CurrentTile+=1 #Saves rotated tile and does not overwrite previously saved files.
                 
