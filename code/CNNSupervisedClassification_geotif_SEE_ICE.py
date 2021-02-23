@@ -83,15 +83,13 @@ from skimage.segmentation import morphological_geodesic_active_contour
 
 ModelName = 'DenseNet121_50_RGB_985acc'     #should be the model name from previous run of TrainCNN.py
 ModelPath = '/media/patrice/DataDrive/SEE_ICE/Models/'  #location of the model
-PredictPath = '/media/patrice/DataDrive/SEE_ICE/debug/'#'Validate/Seen_Validation_Helheim/'#H13_09_19_3000px\\#Sc01_08_19_3000px\\'   #Location of the images
-ScorePath = '/media/patrice/DataDrive/SEE_ICE/DenseNet121_50_kernel5/' #Results_Sc01_08_19_3000px\\Tiles100_results\\RGBNIR\\Patch_1\\'      #location of the output files and the model
-Experiment = '50Test'    #ID to append to output performance files
-ModelTuning=False
-TuningDataName='SeenTest' #no extension
+PredictPath = '/media/patrice/DataDrive/SEE_ICE/Validate/Seen_Validation_Helheim/'#'Validate/Seen_Validation_Helheim/'#H13_09_19_3000px\\#Sc01_08_19_3000px\\'   #Location of the images
+ScorePath = '/media/patrice/DataDrive/SEE_ICE/TestOutput/' #Results_Sc01_08_19_3000px\\Tiles100_results\\RGBNIR\\Patch_1\\'      #location of the output files and the model
+Experiment = 'FinalTest'    #ID to append to output performance files
+
 
 '''BASIC PARAMETER CHOICES'''
-UseSmote = False #Turn SMOTE-ENN resampling on and off
-TrainingEpochs = 200 #will use early stopping with a patience of 10 on the validation accuracy
+TrainingEpochs = 300 #will use early stopping with a patience of 15
 Ndims = 3 # Feature Dimensions for the pre-trained CNN.
 NClasses = 7  #The number of classes in the data. This MUST be the same as the classes used to retrain the model
 Filters = 32
@@ -99,7 +97,7 @@ Kernel_size = 5 #1,3,5,7,15 are valid
 size = 50#size of the prediction tiles
 CNNsamples= 250000 #number of subsamples PER CLASS to extract and train cCNN or MLP
 SizeThresh=30#number of image megapixels your ram can handle, 
-
+GACglacier=True #if true the geodetic contour will be used to refine the glacier class
 DisplayHoldout =  False #Display the results figure which is saved to disk.  
 OutDPI = 400 #Recommended 150 for inspection 1200 for papers.  
 
@@ -109,26 +107,8 @@ SmallestElement = 2 # Despeckle the classification to the smallest length in pix
 
 
 '''MODEL PARAMETERS''' #These would usually not be edited
-DropRate = 0.5
-ModelChoice = 2 # 2 for deep model and 3 for very deep model 
 LearningRate = 0.001
 Chatty = 1 # set the verbosity of the model training.  Use 1 at first, 0 when confident that model is well tuned
-#MinSample = 250000 #minimum sample size per class before warning
-
-
-
-# Path checks- checks for folder ending slash, adds if nessesary
-
-# if ('/' or "'\'") not in PredictPath[-1]:
-#     PredictPath = PredictPath + '/'   
-
-# if ('/' or "'\'") not in ScorePath[-1]:
-#     ScorePath = ScorePath +'/'
-    
-# # create Score Directory if not present
-# if os.path.exists(ScorePath) == False:
-#     os.mkdir(ScorePath)
-
 
 ###############################################################################
 '''setup for RTX use of mixed precision'''
@@ -335,27 +315,7 @@ def classification_report_csv(report, filename):
     dataframe = pd.DataFrame.from_dict(report_data)
     dataframe.to_csv(filename, index = False) 
 
-#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        #CHANGED from original to save overall accuracy
-        #Original code:
-        
-#def classification_report_csv(report, filename):
-#    report_data = []
-#    lines = report.split('\n')
-#    for line in lines[2:-5]:
-#        row = {}
-#        row_data = line.split(' ') 
-#        row_data = list(filter(None, row_data))
-#        row['class'] = row_data[0]
-#        row['precision'] = float(row_data[1])
-#        row['recall'] = float(row_data[2])
-#        row['f1_score'] = float(row_data[3])
-#        row['support'] = float(row_data[4])
-#        report_data.append(row)
-#    dataframe = pd.DataFrame.from_dict(report_data)
-#    dataframe.to_csv(filename, index = False) 
 
- 
 # =============================================================================
 # Return a class prediction to the 1-Nclasses hierarchical classes
 def SimplifyClass(ClassImage, ClassKey):
@@ -385,44 +345,6 @@ def GetF1(report):
     
     return dat[17]
 #=================================================================================
-def TuneModelEpochs(Tiles,Labels, model,TuningDataName,Path):
-        #Split the data for tuning. Use a double pass of train_test_split to shave off some data
-    (trainX, testX, trainY, testY) = train_test_split(Tiles, Labels, test_size=0.2)
-    
-
-    history = model.fit(trainX, trainY, epochs = 500, batch_size = 5000, validation_data = (testX, testY))
-    #Plot the test results
-    history_dict = history.history
-    loss_values = history_dict['loss']
-    val_loss_values = history_dict['val_loss']
-    
-    epochs = range(1, len(loss_values) + 1)
-    get_ipython().run_line_magic('matplotlib', 'qt')
-    plt.figure(figsize = (12, 9.5))
-    plt.subplot(1,2,1)
-    plt.plot(epochs, loss_values, 'bo', label = 'Training loss')
-    plt.plot(epochs,val_loss_values, 'b', label = 'Validation loss')
-    plt.title('Training and Validation Loss')
-    plt.xlabel('Epochs')
-    plt.ylabel('Loss')
-    plt.legend()
-    
-    acc_values = history_dict['accuracy']
-    val_acc_values = history_dict['val_accuracy']
-    plt.subplot(1,2,2)
-    plt.plot(epochs, acc_values, 'go', label = 'Training acc')
-    plt.plot(epochs, val_acc_values, 'g', label = 'Validation acc')
-    plt.title('Training and Validation Accuracy')
-    plt.xlabel('Epochs')
-    plt.ylabel('Accuracy')
-    plt.legend()
-    plt.show()
-    DF=pd.DataFrame(history_dict)
-    DF.to_csv(Path+TuningDataName+'.csv')
-    sys.exit("Tuning Finished, adjust parameters and re-train the model")
-
-    
-
 tic()
 ###############################################################################
     
@@ -646,13 +568,12 @@ for i,im in enumerate(Imagelist):
     I_Stride1Tiles = np.squeeze(I_Stride1Tiles)
     Labels[0,0]=NClasses #force at least 1 pixel to have class 7 and control 1 hot encoding. means that argument of maximum predition is the class.
     Labels1Hot = to_categorical(Labels)
-    if ModelTuning:
-        TuneModelEpochs(I_Stride1Tiles,Labels1Hot, model, TuningDataName,ModelPath)
-    elif Kernel_size>1:
+
+    if Kernel_size>1:
         print('Fitting compact CNN Classifier on ' + str(I_Stride1Tiles.shape[0]) + ' tiles')
     else:
         print('Fitting MLP Classifier on ' + str(I_Stride1Tiles.shape[0]) + ' pixels')
-    callback = tf.keras.callbacks.EarlyStopping(monitor='val_accuracy', patience=10, restore_best_weights=(True))
+    callback = tf.keras.callbacks.EarlyStopping(monitor='val_accuracy', patience=15, min_delta=0.001, restore_best_weights=(True))
     (trainX, testX, trainY, testY) = train_test_split(I_Stride1Tiles, Labels1Hot, test_size=0.2)
     history=model.fit(x=trainX, y=trainY, epochs=TrainingEpochs, batch_size=int(500000/Kernel_size**2), verbose=Chatty, validation_data = (testX, testY),callbacks=[callback])
     I_stride1Tiles=None       
@@ -686,7 +607,116 @@ for i,im in enumerate(Imagelist):
     Predicted = None
     PredictedSubImage = None
 # # =============================================================================
+#'''Detect Calving front from binary morphology operations and active contours'''
+    print('Detecting Calving Front')
+    
+    G2=1*(PredictedImage==4)
+    OceanPixels=np.logical_or(PredictedImage==2, PredictedImage==1)
+    RockPixels=np.logical_and(PredictedImage==6, PredictedImage==7)
+    O2=np.logical_or(OceanPixels, PredictedImage==3)
+    O2label=label(O2, connectivity=1)
+    [c, count]=np.unique(O2label, return_counts=True)
+    c=c[1:]
+    count=count[1:]
+    RealOcean=1*(O2label==np.argmax(count)+1)
+    G2label=label(G2, connectivity=1)
+    [c, count]=np.unique(G2label, return_counts=True)
+    c=c[1:]
+    count=count[1:]
+    RealGlacier=1*(G2label==np.argmax(count)+1)
+    # RealGlacier=binary_closing(RealGlacier, selem=np.ones((3,3)))
+    # RealOcean=binary_closing(RealOcean, selem=np.ones((3,3)))
+    # GO2=BlankFrame(scipy.ndimage.binary_fill_holes(RealGlacier))
+    RO2=1*scipy.ndimage.binary_fill_holes(RealOcean)
+    #deploy the geodetic active contours
+    RealGlacier=scipy.ndimage.binary_fill_holes(RealGlacier)
+    init_ls=1*binary_dilation(1*RealGlacier,selem=np.ones((5,5)))
+    init_ls=1*binary_closing(init_ls, selem=np.ones((30,30)))
+    init_ls=1*scipy.ndimage.binary_fill_holes(init_ls)
+    image = 1-(np.float32(1*RealGlacier))
+    GO2 = morphological_geodesic_active_contour(image, 30, init_ls,
+                                            smoothing=1, balloon=-0.5,
+                                            threshold=0.6)
+    GO2=scipy.ndimage.morphology.binary_erosion(GO2, iterations=2)
+    if GACglacier:#use the GAC to enforce the ice class of the main glacier, will in effect remove ocean-type pixels from the ice.
+        C6=PredictedImage==6
+        C7=PredictedImage==7
+        PredictedImage[GO2==1]=4
+        PredictedImage[C6]=6#restitute rock classes
+        PredictedImage[C7]=7
+        C6=None
+        C7=None
+        
+    RO2=np.logical_and(RO2, np.logical_not(GO2))
+    GO2=BlankFrame(GO2)
+    C=measure.find_contours(GO2, level=0.5)
+    csize=np.zeros(len(C))
+    for i in range(len(C)):
+        csize=C[i].shape[0]
+    MainContour=np.int16(C[np.argmax(csize)])
+    GlacierContour=np.zeros((GO2.shape))
+    for c in range(len(MainContour)):
+        GlacierContour[MainContour[c,0], MainContour[c,1]]=1
+    
 
+    
+    # Overlap_b4dilate=np.logical_and(RealGlacier,RealOcean)
+    # RealGlacier=np.logical_and(RealGlacier, np.logical_not(Overlap_b4dilate))
+    # RealOcean=np.logical_and(RealOcean, np.logical_not(Overlap_b4dilate))
+    GlacierContour=binary_closing(GlacierContour, selem=np.ones((3,3)))
+    RO2=binary_dilation(RO2, selem=np.ones((30,30)))
+    
+    Rock2=binary_dilation(RockPixels)
+    #GO2=binary_dilation(RealGlacier, selem=np.ones((2,2)))
+    cfront=np.logical_and(RO2,GlacierContour)
+    cfront=np.logical_and(cfront, np.logical_not(Rock2))
+
+    #cfront=np.zeros((10,10), dtype='bool')
+    if cfront.any():
+        cfrontlabel=label(cfront, connectivity=2)
+        [c, count]=np.unique(cfrontlabel, return_counts=True)
+        c=c[1:]
+        count=count[1:]
+        cfront=(cfrontlabel==np.argmax(count)+1)
+    #cfront=binary_closing(cfront, selem=np.ones((1,1)))
+    #cfront=skeletonize(cfront) 
+
+    #Set the front in the predicted image as class 8
+    if cfront.any() and (np.sum(1*cfront.reshape(1,-1))<np.sqrt(cfront.shape[0]**2+cfront.shape[1]**2)):#front has to be shorter than the diagonal of the image or else it's an error
+        PredictedImage_display=copy.deepcopy(PredictedImage)
+        PredictedImage_class=copy.deepcopy(PredictedImage)
+        PredictedImage_class[cfront]=8
+        cfront=binary_dilation(cfront, selem=np.ones((10,10)))
+        PredictedImage_display[cfront]=8
+    else:
+        PredictedImage_display=copy.deepcopy(PredictedImage)
+        PredictedImage_class=copy.deepcopy(PredictedImage)
+        print('WARNING: calving front detection failed for '+os.path.basename(im))
+        validate_edge=False
+
+    
+    if validate_edge:
+        Xp,Yp=np.where(PredictedImage_class==8)
+        Xm,Ym=np.where(CalvingFront==1)
+        Xp=Xp.reshape(-1,1)
+        Yp=Yp.reshape(-1,1)
+        Xm=Xm.reshape(-1,1)
+        Ym=Ym.reshape(-1,1)
+        
+        XM=np.concatenate((Xm,Ym), axis=1)
+        XP=np.concatenate((Xp,Yp), axis=1)
+
+        D=scipy.spatial.distance.cdist(XP, XM, metric='euclidean')
+        mindist=10*np.min(D, axis=1)
+            
+        ImageRoot=os.path.basename(im)[:-4]
+        distname=ScorePath+ImageRoot+'_cfdistances'
+        np.save(distname, mindist)
+    # fig, ax = plt.subplots(2, 2, sharex=True, sharey=True)
+    # ax[0,0].imshow(cfront)
+    # ax[0,1].imshow(RO2)
+    # ax[1,0].imshow(GlacierContour)
+    # ax[1,1].imshow(GO2)
 
 #         """ PRODUCE CLASSIFICATION REPORTS """
     if validate_output:
@@ -725,104 +755,7 @@ for i,im in enumerate(Imagelist):
         print('No validation data to estimate quality is available')
         
 
-#'''Detect Calving front from binary morphology operations'''
-    print('Detecting Calving Front')
-    
-    G2=1*(PredictedImage==4)
-    OceanPixels=np.logical_or(PredictedImage==2, PredictedImage==1)
-    RockPixels=np.logical_and(PredictedImage==6, PredictedImage==7)
-    O2=np.logical_or(OceanPixels, PredictedImage==3)
-    O2label=label(O2, connectivity=1)
-    [c, count]=np.unique(O2label, return_counts=True)
-    c=c[1:]
-    count=count[1:]
-    RealOcean=1*(O2label==np.argmax(count)+1)
-    G2label=label(G2, connectivity=1)
-    [c, count]=np.unique(G2label, return_counts=True)
-    c=c[1:]
-    count=count[1:]
-    RealGlacier=1*(G2label==np.argmax(count)+1)
-    # RealGlacier=binary_closing(RealGlacier, selem=np.ones((3,3)))
-    # RealOcean=binary_closing(RealOcean, selem=np.ones((3,3)))
-    # GO2=BlankFrame(scipy.ndimage.binary_fill_holes(RealGlacier))
-    RO2=1*scipy.ndimage.binary_fill_holes(RealOcean)
-    #deploy the geodetic active contours
-    RealGlacier=scipy.ndimage.binary_fill_holes(RealGlacier)
-    init_ls=binary_dilation(1*RealGlacier,selem=np.ones((5,5)))
-    image = 1-(np.float32(1*RealGlacier))
-    GO2 = morphological_geodesic_active_contour(image, 40, init_ls,
-                                            smoothing=1, balloon=-0.5,
-                                            threshold=0.6)
-    
-    GO2=BlankFrame(GO2)
-    GO2=scipy.ndimage.morphology.binary_erosion(GO2, iterations=2)
-    C=measure.find_contours(GO2, level=0.5)
-    csize=np.zeros(len(C))
-    for i in range(len(C)):
-        csize=C[i].shape[0]
-    MainContour=np.int16(C[np.argmax(csize)])
-    GlacierContour=np.zeros((GO2.shape))
-    for c in range(len(MainContour)):
-        GlacierContour[MainContour[c,0], MainContour[c,1]]=1
-    
 
-    
-    # Overlap_b4dilate=np.logical_and(RealGlacier,RealOcean)
-    # RealGlacier=np.logical_and(RealGlacier, np.logical_not(Overlap_b4dilate))
-    # RealOcean=np.logical_and(RealOcean, np.logical_not(Overlap_b4dilate))
-    GlacierContour=binary_closing(GlacierContour, selem=np.ones((3,3)))
-    RO2=binary_dilation(RO2, selem=np.ones((30,30)))
-    
-    Rock2=binary_dilation(RockPixels)
-    #GO2=binary_dilation(RealGlacier, selem=np.ones((2,2)))
-    cfront=np.logical_and(RO2,GlacierContour)
-    cfront=np.logical_and(cfront, np.logical_not(Rock2))
-    #cfront=np.zeros((10,10), dtype='bool')
-    if cfront.any():
-        cfrontlabel=label(cfront, connectivity=2)
-        [c, count]=np.unique(cfrontlabel, return_counts=True)
-        c=c[1:]
-        count=count[1:]
-        cfront=(cfrontlabel==np.argmax(count)+1)
-    #cfront=binary_closing(cfront, selem=np.ones((1,1)))
-    #cfront=skeletonize(cfront) 
-   
-    #Set the front in the predicted image as class 8
-    if cfront.any() and (np.sum(1*cfront.reshape(1,-1))<np.sqrt(cfront.shape[0]**2+cfront.shape[1]**2)):#front has to be shorter than the diagonal of the image or else it's an error
-        PredictedImage_display=copy.deepcopy(PredictedImage)
-        PredictedImage_class=copy.deepcopy(PredictedImage)
-        PredictedImage_class[cfront]=8
-        cfront=binary_dilation(cfront, selem=np.ones((10,10)))
-        PredictedImage_display[cfront]=8
-    else:
-        PredictedImage_display=copy.deepcopy(PredictedImage)
-        PredictedImage_class=copy.deepcopy(PredictedImage)
-        print('WARNING: calving front detection failed for '+os.path.basename(im))
-        validate_edge=False
-        
-    
-    if validate_edge:
-        Xp,Yp=np.where(PredictedImage_class==8)
-        Xm,Ym=np.where(CalvingFront==1)
-        Xp=Xp.reshape(-1,1)
-        Yp=Yp.reshape(-1,1)
-        Xm=Xm.reshape(-1,1)
-        Ym=Ym.reshape(-1,1)
-        
-        XM=np.concatenate((Xm,Ym), axis=1)
-        XP=np.concatenate((Xp,Yp), axis=1)
-
-        D=scipy.spatial.distance.cdist(XP, XM, metric='euclidean')
-        mindist=10*np.min(D, axis=1)
-            
-        ImageRoot=os.path.basename(im)[:-4]
-        distname=ScorePath+ImageRoot+'_cfdistances'
-        np.save(distname, mindist)
-    # fig, ax = plt.subplots(2, 2, sharex=True, sharey=True)
-    # ax[0,0].imshow(cfront)
-    # ax[0,1].imshow(RO2)
-    # ax[1,0].imshow(GlacierContour)
-    # ax[1,1].imshow(GO2)
             
         
 # # =============================================================================
