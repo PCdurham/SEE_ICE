@@ -63,7 +63,7 @@ for c in range(1,classes+1):
         
 
 #Output as npy arrays for both the tensor and the label
-np.save(folder+'Med40kTensor'+str(tilesize),MasterTensor)
-np.save(folder+'Med40kLabel'+str(tilesize),MasterLabel)
+np.save(folder+'Med30kTensor'+str(tilesize),MasterTensor)
+np.save(folder+'Med30kLabel'+str(tilesize),MasterLabel)
 toc()
     

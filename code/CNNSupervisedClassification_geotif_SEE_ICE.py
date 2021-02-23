@@ -5,15 +5,14 @@ __author__ = 'Patrice Carbonneau'
 __contact__ = 'patrice.carbonneau@durham.ac.uk'
 __copyright__ = '(c) Patrice Carbonneau'
 __license__ = 'MIT'
-__date__ = '15 APR 2019'
+__date__ = 'FEB 2020'
 __version__ = '1.1'
 __status__ = "initial release"
-__url__ = "https://github.com/geojames/Self-Supervised-Classification"
 
 
 """
 Name:           CNNSupervisedClassification.py
-Compatibility:  Python 3.6
+Compatibility:  Python 3.8
 Description:    Performs CNN-Supervised Image CLassification with a 
                 pre-trained Convolutional Neural Network model.
                 User options are in the first section of code.
@@ -59,13 +58,13 @@ from skimage import io
 import skimage.transform as T
 from skimage.filters import median
 from skimage.measure import label
-import pandas as pd
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout, BatchNormalization,Conv2D, Flatten
 from tensorflow.keras.utils import to_categorical
 from sklearn.model_selection import train_test_split
 from skimage.filters.rank import modal
-from skimage.morphology import binary_dilation, binary_closing, binary_erosion, skeletonize
+import skimage.measure as measure
+from skimage.morphology import binary_dilation, binary_closing, binary_opening, binary_erosion
 import os.path
 from sklearn import metrics
 from skimage.morphology import disk
@@ -75,36 +74,38 @@ import sys
 from IPython import get_ipython #this can be removed if not using Spyder
 import glob
 import gdal
+from skimage.segmentation import morphological_geodesic_active_contour
+                                  
 ###############################################################################
 
 
 """User data input. Fill in the info below before running"""
 
-ModelName = 'DenseNet121_100_RGB_99acc'     #should be the model name from previous run of TrainCNN.py
+ModelName = 'DenseNet121_50_RGB_985acc'     #should be the model name from previous run of TrainCNN.py
 ModelPath = '/media/patrice/DataDrive/SEE_ICE/Models/'  #location of the model
-PredictPath = '/media/patrice/DataDrive/SEE_ICE/Validate/Seen_Validation_Helheim'#H13_09_19_3000px\\#Sc01_08_19_3000px\\'   #Location of the images
-ScorePath = '/media/patrice/DataDrive/SEE_ICE/TestOutputDenseNet121/' #Results_Sc01_08_19_3000px\\Tiles100_results\\RGBNIR\\Patch_1\\'      #location of the output files and the model
-Experiment = 'DenseNet121Test'    #ID to append to output performance files
+PredictPath = '/media/patrice/DataDrive/SEE_ICE/debug/'#'Validate/Seen_Validation_Helheim/'#H13_09_19_3000px\\#Sc01_08_19_3000px\\'   #Location of the images
+ScorePath = '/media/patrice/DataDrive/SEE_ICE/DenseNet121_50_kernel5/' #Results_Sc01_08_19_3000px\\Tiles100_results\\RGBNIR\\Patch_1\\'      #location of the output files and the model
+Experiment = '50Test'    #ID to append to output performance files
 ModelTuning=False
-TuningDataName='BatchDebug' #no extension
+TuningDataName='SeenTest' #no extension
 
 '''BASIC PARAMETER CHOICES'''
 UseSmote = False #Turn SMOTE-ENN resampling on and off
-TrainingEpochs = 30 #Typically this can be reduced
+TrainingEpochs = 200 #will use early stopping with a patience of 10 on the validation accuracy
 Ndims = 3 # Feature Dimensions for the pre-trained CNN.
 NClasses = 7  #The number of classes in the data. This MUST be the same as the classes used to retrain the model
 Filters = 32
-Kernel_size = 5
-size = 100#size of the prediction tiles
-CNNsamples= 1000000 #number of subsamples PER CLASS to extract and train cCNN or MLP
-SizeThresh=30 #number of image megapixels your ram can handle
+Kernel_size = 5 #1,3,5,7,15 are valid
+size = 50#size of the prediction tiles
+CNNsamples= 250000 #number of subsamples PER CLASS to extract and train cCNN or MLP
+SizeThresh=30#number of image megapixels your ram can handle, 
 
 DisplayHoldout =  False #Display the results figure which is saved to disk.  
 OutDPI = 400 #Recommended 150 for inspection 1200 for papers.  
 
 '''FILTERING OPTIONS'''
 #These parameters offer extra options to smooth the classification outputs.  By default they are set
-SmallestElement = 1 # Despeckle the classification to the smallest length in pixels of element remaining, just enter linear units (e.g. 3 for 3X3 pixels)
+SmallestElement = 2 # Despeckle the classification to the smallest length in pixels of element remaining, just enter linear units (e.g. 3 for 3X3 pixels)
 
 
 '''MODEL PARAMETERS''' #These would usually not be edited
@@ -199,11 +200,11 @@ def slide_rasters_to_tiles(im, size):
     else:
         h, w, d = im.shape
 
-    TileTensor = np.zeros(((h-size)*(w-size), size,size,d))
+    TileTensor = np.zeros(((h-size+1)*(w-size+1), size,size,d))
 
     B=0
-    for y in range(0, h-size):
-        for x in range(0, w-size):
+    for y in range(0, h-size+1):
+        for x in range(0, w-size+1):
 
             TileTensor[B,:,:,:] = im[y:y+size,x:x+size,:].reshape(size,size,d)
             B+=1
@@ -365,6 +366,13 @@ def SimplifyClass(ClassImage, ClassKey):
         ClassImage[ClassImage == Iclasses[c]] = Hclass
     return ClassImage
 
+def BlankFrame(Image):
+    Image[0:10, :]=np.zeros((10, Image.shape[1]))
+    Image[:,0:10]=np.zeros((Image.shape[0], 10))
+    Image[Image.shape[0]-10:Image.shape[0], :]=np.zeros((10, Image.shape[1]))
+    Image[:,Image.shape[1]-10:Image.shape[1] ]=np.zeros((Image.shape[0], 10))
+    
+    return Image
 
 
 # =============================================================================
@@ -424,10 +432,10 @@ if Kernel_size==3:
     model = Sequential()
     model.add(Conv2D(Filters,3, data_format='channels_last', input_shape=(Kernel_size, Kernel_size, Ndims))) #model.add(Conv2D(16,5, data_format='channels_last', input_shape=(5,5,4)))
     model.add(Flatten())
-    model.add(Dense(512, kernel_regularizer= regularizers.l2(0.001), kernel_initializer='normal', activation='relu'))
-    model.add(BatchNormalization(axis=-1, momentum=0.99, epsilon=0.001, center=True, scale=True, beta_initializer='zeros', gamma_initializer='ones', moving_mean_initializer='zeros', moving_variance_initializer='ones', beta_regularizer=None, gamma_regularizer=None, beta_constraint=None, gamma_constraint=None))
     model.add(Dense(64, kernel_regularizer= regularizers.l2(0.001), kernel_initializer='normal', activation='relu'))
+    model.add(BatchNormalization(axis=-1, momentum=0.99, epsilon=0.001, center=True, scale=True, beta_initializer='zeros', gamma_initializer='ones', moving_mean_initializer='zeros', moving_variance_initializer='ones', beta_regularizer=None, gamma_regularizer=None, beta_constraint=None, gamma_constraint=None))
     model.add(Dense(32, kernel_regularizer= regularizers.l2(0.001), kernel_initializer='normal', activation='relu'))
+    model.add(Dense(16, kernel_regularizer= regularizers.l2(0.001), kernel_initializer='normal', activation='relu'))
     
     model.add(Dense(NClasses+1, kernel_initializer='normal', activation='softmax', dtype='float32')) 
     
@@ -482,9 +490,33 @@ elif Kernel_size==7:
     model.compile(loss='categorical_crossentropy', optimizer=Optim, metrics = ['accuracy'])
     
     model.summary()
+   
+elif Kernel_size==15:
+        # create cCNN model
+    model = Sequential()
+    model.add(Conv2D(Filters,3, data_format='channels_last', input_shape=(Kernel_size, Kernel_size, Ndims))) #model.add(Conv2D(16,5, data_format='channels_last', input_shape=(5,5,4)))
+    model.add(Conv2D(Filters,3))
+    model.add(Conv2D(Filters,3))
+    model.add(Conv2D(Filters,3))
+    model.add(Conv2D(Filters,3))
+    model.add(Conv2D(Filters,3))
+    model.add(Flatten())
+    model.add(Dense(512, kernel_regularizer= regularizers.l2(0.001), kernel_initializer='normal', activation='relu'))
+    model.add(BatchNormalization(axis=-1, momentum=0.99, epsilon=0.001, center=True, scale=True, beta_initializer='zeros', gamma_initializer='ones', moving_mean_initializer='zeros', moving_variance_initializer='ones', beta_regularizer=None, gamma_regularizer=None, beta_constraint=None, gamma_constraint=None))
+    model.add(Dense(64, kernel_regularizer= regularizers.l2(0.001), kernel_initializer='normal', activation='relu'))
+    model.add(Dense(32, kernel_regularizer= regularizers.l2(0.001), kernel_initializer='normal', activation='relu'))
     
+    model.add(Dense(NClasses+1, kernel_initializer='normal', activation='softmax', dtype='float32')) 
     
-else:
+        # Tune an optimiser
+    Optim = optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=True)
+    
+        # Compile model
+    model.compile(loss='categorical_crossentropy', optimizer=Optim, metrics = ['accuracy'])
+    
+    model.summary()
+    
+elif Kernel_size==1:
    
 
     # create  MLP model
@@ -503,6 +535,9 @@ else:
     model.compile(loss='categorical_crossentropy', optimizer=Optim, metrics = ['accuracy'])
     
     model.summary() 
+    
+else:
+    print('Warning: invalid kernel size')
 
 #EstimatorNN = KerasClassifier(build_fn=patchCNN_model_L2D, epochs=TrainingEpochs, batch_size=50000, verbose=Chatty)
   
@@ -617,36 +652,37 @@ for i,im in enumerate(Imagelist):
         print('Fitting compact CNN Classifier on ' + str(I_Stride1Tiles.shape[0]) + ' tiles')
     else:
         print('Fitting MLP Classifier on ' + str(I_Stride1Tiles.shape[0]) + ' pixels')
-    
-    model.fit(x=I_Stride1Tiles, y=Labels1Hot, epochs=TrainingEpochs, batch_size=30000, verbose=Chatty)
-            
+    callback = tf.keras.callbacks.EarlyStopping(monitor='val_accuracy', patience=10, restore_best_weights=(True))
+    (trainX, testX, trainY, testY) = train_test_split(I_Stride1Tiles, Labels1Hot, test_size=0.2)
+    history=model.fit(x=trainX, y=trainY, epochs=TrainingEpochs, batch_size=int(500000/Kernel_size**2), verbose=Chatty, validation_data = (testX, testY),callbacks=[callback])
+    I_stride1Tiles=None       
     '''Predict all pixels with line by line option to manage memory'''
     SizeThresh=SizeThresh*1000000
     if SizeThresh>=Im3D.shape[0]*Im3D.shape[1]:
         print('Classifying whole image...')
         Tiles = np.squeeze(slide_rasters_to_tiles(Im3D[:,:,0:Ndims], Kernel_size))/NormFactor
         PredictedTiles = np.argmax(model.predict(Tiles, batch_size=25000), axis=1)
-        PredictedSubImage = PredictedTiles.reshape(Im3D.shape[0]-Kernel_size, Im3D.shape[1]-Kernel_size)
+        PredictedSubImage = PredictedTiles.reshape(Im3D.shape[0]-Kernel_size+1, Im3D.shape[1]-Kernel_size+1)
     else:
-        PredictedSubImage = np.zeros((Im3D.shape[0]-Kernel_size//2, Im3D.shape[1]-Kernel_size//2))
+        PredictedSubImage = np.zeros((Im3D.shape[0]-Kernel_size+1, Im3D.shape[1]-Kernel_size+1))
         print('Classifying rows...')
         for r in range(0,Im3D.shape[0]-Kernel_size):
             
             if r % 1000 == 0:
                 print("%d: %s" % (r,'of 3000'))
             #print('row '+str(r)+' of '+str(Im3D.shape[0]))
-            Irow = Im3D[r:r+Kernel_size+1,:,:]
+            Irow = Im3D[r:r+Kernel_size,:,:]
             #tile the image
             Tiles = np.squeeze(slide_rasters_to_tiles(Irow, Kernel_size))/NormFactor
             Predicted = model.predict(Tiles, batch_size=25000)
         
-            PredictedSubImage[r+Kernel_size//2,Kernel_size//2:-Kernel_size//2]=np.argmax(Predicted, axis=1)
+            PredictedSubImage[r,:]=np.argmax(Predicted, axis=1)
         
     if SmallestElement > 0:
         PredictedSubImage = modal(np.uint8(PredictedSubImage), disk(2*SmallestElement)) #clean up the class with a mode filter
     
     PredictedImage = np.zeros((Im3D.shape[0], Im3D.shape[1]))
-    PredictedImage[Kernel_size//2:Im3D.shape[0]-Kernel_size//2-1, Kernel_size//2:Im3D.shape[1]-Kernel_size//2-1]=PredictedSubImage
+    PredictedImage[Kernel_size//2:Im3D.shape[0]-Kernel_size//2, Kernel_size//2:Im3D.shape[1]-Kernel_size//2]=PredictedSubImage
     Predicted = None
     PredictedSubImage = None
 # # =============================================================================
@@ -686,19 +722,16 @@ for i,im in enumerate(Imagelist):
         DAT=np.concatenate((Class.reshape(-1,1), PredictedClassVECT.reshape(-1,1),PredictedImageVECT.reshape(-1,1)), axis=1)
         np.savez_compressed(DATname,DAT)
     else:
-        print('No validation data to estimate cuqality is available')
+        print('No validation data to estimate quality is available')
         
 
 #'''Detect Calving front from binary morphology operations'''
-
-    GlacierPixels=1*(PredictedImage==4)
+    print('Detecting Calving Front')
+    
+    G2=1*(PredictedImage==4)
     OceanPixels=np.logical_or(PredictedImage==2, PredictedImage==1)
-    OceanPixels=np.logical_or(OceanPixels, PredictedImage==3)
-    O2=scipy.ndimage.binary_fill_holes(OceanPixels)
-    G2=scipy.ndimage.binary_fill_holes(GlacierPixels)
-    G2=binary_erosion(G2, selem=np.ones((3,3)))
-    G2=binary_dilation(G2, selem=np.ones((3,3)))
-    #G2=binary_closing(G2, selem=np.ones((10,10)))
+    RockPixels=np.logical_and(PredictedImage==6, PredictedImage==7)
+    O2=np.logical_or(OceanPixels, PredictedImage==3)
     O2label=label(O2, connectivity=1)
     [c, count]=np.unique(O2label, return_counts=True)
     c=c[1:]
@@ -709,48 +742,87 @@ for i,im in enumerate(Imagelist):
     c=c[1:]
     count=count[1:]
     RealGlacier=1*(G2label==np.argmax(count)+1)
-    # for g in range(len(count)):
-    #     if count[g]>100000:
-    #         RealGlacier=np.logical_or(RealGlacier,G2label==c[g]+1)
-    RO2=binary_dilation(RealOcean)
-    cfront=np.logical_and(RO2,RealGlacier)
-    cfront=binary_dilation(cfront, selem=np.ones((10,10)))
-    cfront=binary_erosion(cfront, selem=np.ones((9,9)))
-    #cfront=skeletonize(cfront)
+    # RealGlacier=binary_closing(RealGlacier, selem=np.ones((3,3)))
+    # RealOcean=binary_closing(RealOcean, selem=np.ones((3,3)))
+    # GO2=BlankFrame(scipy.ndimage.binary_fill_holes(RealGlacier))
+    RO2=1*scipy.ndimage.binary_fill_holes(RealOcean)
+    #deploy the geodetic active contours
+    RealGlacier=scipy.ndimage.binary_fill_holes(RealGlacier)
+    init_ls=binary_dilation(1*RealGlacier,selem=np.ones((5,5)))
+    image = 1-(np.float32(1*RealGlacier))
+    GO2 = morphological_geodesic_active_contour(image, 40, init_ls,
+                                            smoothing=1, balloon=-0.5,
+                                            threshold=0.6)
+    
+    GO2=BlankFrame(GO2)
+    GO2=scipy.ndimage.morphology.binary_erosion(GO2, iterations=2)
+    C=measure.find_contours(GO2, level=0.5)
+    csize=np.zeros(len(C))
+    for i in range(len(C)):
+        csize=C[i].shape[0]
+    MainContour=np.int16(C[np.argmax(csize)])
+    GlacierContour=np.zeros((GO2.shape))
+    for c in range(len(MainContour)):
+        GlacierContour[MainContour[c,0], MainContour[c,1]]=1
+    
+
+    
+    # Overlap_b4dilate=np.logical_and(RealGlacier,RealOcean)
+    # RealGlacier=np.logical_and(RealGlacier, np.logical_not(Overlap_b4dilate))
+    # RealOcean=np.logical_and(RealOcean, np.logical_not(Overlap_b4dilate))
+    GlacierContour=binary_closing(GlacierContour, selem=np.ones((3,3)))
+    RO2=binary_dilation(RO2, selem=np.ones((30,30)))
+    
+    Rock2=binary_dilation(RockPixels)
+    #GO2=binary_dilation(RealGlacier, selem=np.ones((2,2)))
+    cfront=np.logical_and(RO2,GlacierContour)
+    cfront=np.logical_and(cfront, np.logical_not(Rock2))
+    #cfront=np.zeros((10,10), dtype='bool')
+    if cfront.any():
+        cfrontlabel=label(cfront, connectivity=2)
+        [c, count]=np.unique(cfrontlabel, return_counts=True)
+        c=c[1:]
+        count=count[1:]
+        cfront=(cfrontlabel==np.argmax(count)+1)
+    #cfront=binary_closing(cfront, selem=np.ones((1,1)))
+    #cfront=skeletonize(cfront) 
+   
     #Set the front in the predicted image as class 8
-    PredictedImage_display=copy.deepcopy(PredictedImage)
-    PredictedImage_class=copy.deepcopy(PredictedImage)
-    PredictedImage_class[cfront]=8
-    cfront=binary_dilation(cfront, selem=np.ones((10,10)))
-    PredictedImage_display[cfront]=8
+    if cfront.any() and (np.sum(1*cfront.reshape(1,-1))<np.sqrt(cfront.shape[0]**2+cfront.shape[1]**2)):#front has to be shorter than the diagonal of the image or else it's an error
+        PredictedImage_display=copy.deepcopy(PredictedImage)
+        PredictedImage_class=copy.deepcopy(PredictedImage)
+        PredictedImage_class[cfront]=8
+        cfront=binary_dilation(cfront, selem=np.ones((10,10)))
+        PredictedImage_display[cfront]=8
+    else:
+        PredictedImage_display=copy.deepcopy(PredictedImage)
+        PredictedImage_class=copy.deepcopy(PredictedImage)
+        print('WARNING: calving front detection failed for '+os.path.basename(im))
+        validate_edge=False
+        
     
     if validate_edge:
-        cfront_predicted=PredictedImage_class==8
-        x = np.linspace(0, cfront.shape[0], cfront.shape[0])
-        y = np.linspace(0, cfront.shape[1], cfront.shape[1])
-        xpixel, ypixel = np.meshgrid(x, y)
-        cf_predicted=cfront_predicted.reshape(1,-1)
-        cf_manual=CalvingFront.reshape(1,-1)
-        xpixel_vect=xpixel.reshape(1,-1)
-        ypixel_vect=ypixel.reshape(1,-1)
-        numpoints=np.int16(np.sum(cf_manual.reshape(1,-1)))
-        mindist=np.zeros((numpoints))
-        data=np.logical_or(cf_manual,cf_predicted)
-        xpixel_vect=xpixel_vect[data]
-        ypixel_vect=ypixel_vect[data]
-        cf_predicted=cf_predicted[data]
-        cf_manual=cf_manual[data]
-        i=0
-        for p in range(len(xpixel_vect)):
-            if cf_manual[p]==1:
-                dist_vect=np.sqrt((xpixel_vect-xpixel_vect[p])**2 + (ypixel_vect-ypixel_vect[p])**2)
-                dist_vect[cf_predicted!=1]=1e100
-                mindist[i]=10*np.min(dist_vect)
-                i+=1
+        Xp,Yp=np.where(PredictedImage_class==8)
+        Xm,Ym=np.where(CalvingFront==1)
+        Xp=Xp.reshape(-1,1)
+        Yp=Yp.reshape(-1,1)
+        Xm=Xm.reshape(-1,1)
+        Ym=Ym.reshape(-1,1)
+        
+        XM=np.concatenate((Xm,Ym), axis=1)
+        XP=np.concatenate((Xp,Yp), axis=1)
+
+        D=scipy.spatial.distance.cdist(XP, XM, metric='euclidean')
+        mindist=10*np.min(D, axis=1)
+            
         ImageRoot=os.path.basename(im)[:-4]
         distname=ScorePath+ImageRoot+'_cfdistances'
         np.save(distname, mindist)
-
+    # fig, ax = plt.subplots(2, 2, sharex=True, sharey=True)
+    # ax[0,0].imshow(cfront)
+    # ax[0,1].imshow(RO2)
+    # ax[1,0].imshow(GlacierContour)
+    # ax[1,1].imshow(GO2)
             
         
 # # =============================================================================
@@ -766,6 +838,7 @@ for i,im in enumerate(Imagelist):
         ClassIm[c,0] = c
         PredictedClass[c,0] = c
         PredictedImage[c,0] = c
+        PredictedImage_display[c,0] = c
     #get_ipython().run_line_magic('matplotlib', 'qt')
     plt.figure(figsize = (12, 9.5)) #reduce these values if you have a small screen
     if validate_output:
@@ -881,7 +954,7 @@ for i,im in enumerate(Imagelist):
         ImageRoot=os.path.basename(im)[:-4]
         outname=ScorePath+ImageRoot+'_classified'+'.png'
         io.imsave(outname,PredictedImage_class)
-        
+     #Memory cleanup   
     PredictedClass=None
     PredictedClassVECT=None
     PredictedImage=None
@@ -897,6 +970,15 @@ for i,im in enumerate(Imagelist):
     G2=None
     G2label=None
     GlacierPixels=None
+    image=None
+    CalvingFront=None
+    CalvingFront_display=None
+    cfront=None
+    cfrontlabel=None
+    ClassIm=None
+    Class=None
+    GlacierContour=None
+    init_ls=None
         
 toc()   
             

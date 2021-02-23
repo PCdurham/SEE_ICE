@@ -19,7 +19,7 @@ Description:    Tiles images into 4D stacks of image bands (R,G,B,NIR)
 import numpy as np
 import skimage.io as IO
 import glob
-
+import os
 # =============================================================================
 
 """ User Input - Fill in the info below before running """
@@ -88,7 +88,7 @@ def save_tile(I, LabelVector, CurrentTile, DataFolder, size, stride):
             IO.imsave(DataFolder+'Train'+'/C4/'+TileName, I)
 
         elif LabelVector  == 5:
-            IO.imsave(DataFolder+'Train'+'/C5/'+TileName, I)
+            #O.imsave(DataFolder+'Train'+'/C5/'+TileName, I)
  
         elif LabelVector  == 6:
             IO.imsave(DataFolder+'Train'+'/C6/'+TileName, I)
@@ -124,15 +124,15 @@ def save_tile(I, LabelVector, CurrentTile, DataFolder, size, stride):
 
 """ Processing """
 
-img = glob.glob(ImFolder + "clip*.*")
+img = glob.glob(ImFolder + "Hel*.*")
 #Tile sliding
-CurrentTile = 0
-for i in range(len(img)):
+CurrentTile = 3000000
+for i in range(6,len(img)):
     #Load image
 
     ImName=img[i]
-    TrainName=ImFolder +'Train_'+ImName[-13:]
-    Im3D = IO.imread(ImName)
+    TrainName=ImFolder +'SCLS_'+os.path.basename(img[i])
+    Im3D = np.int16(IO.imread(ImName))
     ClassRaster = IO.imread(TrainName)
     im = CropToTile (Im3D, size)
     CroppedClassRaster = CropToTile (ClassRaster, size)
@@ -153,23 +153,23 @@ for i in range(len(img)):
             #Tile = np.uint8(255*Tile/16384)
             if Valid: #==true i.e. if the tile has a dominant class assigned to it.
                 #raw tile
-                I=Tile
+                I=np.uint16(Tile)
                 save_tile(I, Label, CurrentTile, DataFolder, size, stride) #Save the tile to disk.
                 CurrentTile+=1 #Current tile plus 1 - so won't overwrite previously saved file.
                 #90 rotation + noise.
                 Tile=np.rot90(Tile)
-                I=Tile+np.int16(10*np.random.uniform(size=Tile.shape)) #Rotates tile 90 degrees + noise from 0-2.
-                save_tile(I, Label, CurrentTile, DataFolder, size, stride) #Save the tile to disk.
+                I=Tile+np.random.randint(low=-10, high=+10, size=Tile.shape) #Rotates tile 90 degrees + noise from -10 to 10.
+                save_tile(np.uint16(I), Label, CurrentTile, DataFolder, size, stride) #Save the tile to disk.
                 CurrentTile+=1 #Saves rotated tile and does not overwrite previously saved files.
                 #180 rotation + noise.
                 Tile=np.rot90(Tile)
-                I=Tile+np.int16(10*np.random.uniform(size=Tile.shape)) #Rotates tile 90 degrees+ noise from 0-2.
-                save_tile(I, Label, CurrentTile, DataFolder, size, stride) #Save the tile to disk.
+                I=Tile+np.random.randint(low=-10, high=+10, size=Tile.shape) ##Rotates tile 90 degrees + noise from -10 to 10.
+                save_tile(np.uint16(I), Label, CurrentTile, DataFolder, size, stride) #Save the tile to disk.
                 CurrentTile+=1 #Saves rotated tile and does not overwrite previously saved files.
                #270 rotation + noise.
                 Tile=np.rot90(Tile)
-                I=Tile+np.int16(10*np.random.uniform(size=Tile.shape)) #Rotates tile 90 degrees+ noise from 0-2.
-                save_tile(I, Label, CurrentTile, DataFolder, size, stride) #Save the tile to disk.
+                I=Tile+np.random.randint(low=-10, high=+10, size=Tile.shape) ##Rotates tile 90 degrees + noise from -10 to 10.
+                save_tile(np.uint16(I), Label, CurrentTile, DataFolder, size, stride) #Save the tile to disk.
                 CurrentTile+=1 #Saves rotated tile and does not overwrite previously saved files.
                 
 

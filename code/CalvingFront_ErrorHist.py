@@ -8,21 +8,36 @@ Created on Wed Feb 17 10:06:36 2021
 import numpy as np
 import glob
 import seaborn as sns
+import statistics
+import matplotlib.pyplot as plt
+import os
 
 
 
-ScorePath1 = '/media/patrice/DataDrive/SEE_ICE/TestOutputDenseNet121/'
+ScorePath1 = '/media/patrice/DataDrive/SEE_ICE/DenseNet121_50_kernel5/'
 
 DatList=glob.glob(ScorePath1+'*.npy')
 
-MasterData=np.load(DatList[0])
-for d in range(1, len(DatList)):
-    data=np.load(DatList[0])
-    MasterData=np.concatenate((MasterData,data), axis=0)
+MasterData=np.zeros(1)
+for d in range(0, len(DatList)):
+    data=np.load(DatList[d])
+    if np.max(data)>1000:
+        print('Warning: catastrophic error in '+ os.path.basename(DatList[d]))
+        plt.figure()
+        sns.histplot(data=data, binwidth=(10))
+        plt.title('Catastrophic error for '+os.path.basename(DatList[d]))
+    else:
     
-    
-sns.histplot(data=MasterData, binwidth=(10))
+        MasterData=np.concatenate((MasterData,data), axis=0)
+        #plt.figure()
+        #sns.histplot(data=MasterData, binwidth=(10))
 
-e95=np.percentile(MasterData,95)
-print('95th percentile error= '+str(int(e95)))
+MasterData=MasterData[1:]
+plt.figure()   
+sns.histplot(data=MasterData, binwidth=(10))
+plt.title('master')
+
+print('Modal error= '+str(int(statistics.mode(MasterData))))
 print('median error '+str(int(np.median(MasterData))))
+print('mean error '+str(int(np.median(MasterData))))
+print('stdev error '+str(int(np.std(MasterData))))
