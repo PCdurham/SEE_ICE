@@ -81,28 +81,29 @@ from skimage.segmentation import morphological_geodesic_active_contour
 
 """User data input. Fill in the info below before running"""
 
-ModelName = 'DenseNet121_50_RGB_985acc'     #should be the model name from previous run of TrainCNN.py
+ModelName = 'VGG16_50_RGBNIRfloat16_98acc'     #should be the model name from previous run of TrainCNN.py
 ModelPath = '/media/patrice/DataDrive/SEE_ICE/Models/'  #location of the model
 PredictPath = '/media/patrice/DataDrive/SEE_ICE/Validate/Seen_Validation_Helheim/'#'Validate/Seen_Validation_Helheim/'#H13_09_19_3000px\\#Sc01_08_19_3000px\\'   #Location of the images
-ScorePath = '/media/patrice/DataDrive/SEE_ICE/TestOutput/' #Results_Sc01_08_19_3000px\\Tiles100_results\\RGBNIR\\Patch_1\\'      #location of the output files and the model
-Experiment = 'FinalTest'    #ID to append to output performance files
+ScorePath = '/media/patrice/DataDrive/SEE_ICE/VGG16_50_RGBNIR_fp16_kernel15/' #Results_Sc01_08_19_3000px\\Tiles100_results\\RGBNIR\\Patch_1\\'      #location of the output files and the model
+Experiment = 'VGGIR_50k3'    #ID to append to output performance files
 
 
 '''BASIC PARAMETER CHOICES'''
 TrainingEpochs = 300 #will use early stopping with a patience of 15
-Ndims = 3 # Feature Dimensions for the pre-trained CNN.
+Ndims = 4 # Feature Dimensions for the pre-trained CNN.
 NClasses = 7  #The number of classes in the data. This MUST be the same as the classes used to retrain the model
 Filters = 32
-Kernel_size = 5 #1,3,5,7,15 are valid
+Kernel_size = 15 #1,3,5,7,15 are valid
 size = 50#size of the prediction tiles
-CNNsamples= 250000 #number of subsamples PER CLASS to extract and train cCNN or MLP
-SizeThresh=30#number of image megapixels your ram can handle, 
+CNNsamples= 500000 #number of subsamples PER CLASS to extract and train cCNN or MLP
+SizeThresh=3#number of image megapixels your ram can handle, 
 GACglacier=True #if true the geodetic contour will be used to refine the glacier class
 DisplayHoldout =  False #Display the results figure which is saved to disk.  
 OutDPI = 400 #Recommended 150 for inspection 1200 for papers.  
 
 '''FILTERING OPTIONS'''
 #These parameters offer extra options to smooth the classification outputs.  By default they are set
+ImFilterSize=1 #median filtering, use 1 for no filter
 SmallestElement = 2 # Despeckle the classification to the smallest length in pixels of element remaining, just enter linear units (e.g. 3 for 3X3 pixels)
 
 
@@ -490,7 +491,8 @@ for f in range(len(Folderlist)):
     ImageName=os.path.basename(Folderlist[f])
     if not(Folderlist[f].__contains__('SCLS')):
         if not(Folderlist[f].__contains__('EDGE')):
-            Imagelist.append(Folderlist[f])
+            if not(Folderlist[f].__contains__('VM')):
+                Imagelist.append(Folderlist[f])
     
 
 
@@ -612,13 +614,12 @@ for i,im in enumerate(Imagelist):
     
     G2=1*(PredictedImage==4)
     OceanPixels=np.logical_or(PredictedImage==2, PredictedImage==1)
-    RockPixels=np.logical_and(PredictedImage==6, PredictedImage==7)
-    O2=np.logical_or(OceanPixels, PredictedImage==3)
-    O2label=label(O2, connectivity=1)
-    [c, count]=np.unique(O2label, return_counts=True)
-    c=c[1:]
-    count=count[1:]
-    RealOcean=1*(O2label==np.argmax(count)+1)
+    RealOcean=np.logical_or(OceanPixels, PredictedImage==3)
+    # O2label=label(O2, connectivity=1)
+    # [c, count]=np.unique(O2label, return_counts=True)
+    # c=c[1:]
+    # count=count[1:]
+    # RealOcean=1*(O2label==np.argmax(count)+1)
     G2label=label(G2, connectivity=1)
     [c, count]=np.unique(G2label, return_counts=True)
     c=c[1:]
@@ -638,14 +639,7 @@ for i,im in enumerate(Imagelist):
                                             smoothing=1, balloon=-0.5,
                                             threshold=0.6)
     GO2=scipy.ndimage.morphology.binary_erosion(GO2, iterations=2)
-    if GACglacier:#use the GAC to enforce the ice class of the main glacier, will in effect remove ocean-type pixels from the ice.
-        C6=PredictedImage==6
-        C7=PredictedImage==7
-        PredictedImage[GO2==1]=4
-        PredictedImage[C6]=6#restitute rock classes
-        PredictedImage[C7]=7
-        C6=None
-        C7=None
+
         
     RO2=np.logical_and(RO2, np.logical_not(GO2))
     GO2=BlankFrame(GO2)
@@ -665,12 +659,7 @@ for i,im in enumerate(Imagelist):
     # RealOcean=np.logical_and(RealOcean, np.logical_not(Overlap_b4dilate))
     GlacierContour=binary_closing(GlacierContour, selem=np.ones((3,3)))
     RO2=binary_dilation(RO2, selem=np.ones((30,30)))
-    
-    Rock2=binary_dilation(RockPixels)
-    #GO2=binary_dilation(RealGlacier, selem=np.ones((2,2)))
     cfront=np.logical_and(RO2,GlacierContour)
-    cfront=np.logical_and(cfront, np.logical_not(Rock2))
-
     #cfront=np.zeros((10,10), dtype='bool')
     if cfront.any():
         cfrontlabel=label(cfront, connectivity=2)
@@ -678,9 +667,15 @@ for i,im in enumerate(Imagelist):
         c=c[1:]
         count=count[1:]
         cfront=(cfrontlabel==np.argmax(count)+1)
-    #cfront=binary_closing(cfront, selem=np.ones((1,1)))
-    #cfront=skeletonize(cfront) 
 
+    if GACglacier:#use the GAC to enforce the ice class of the main glacier, will in effect remove ocean-type pixels from the ice.
+        C6=PredictedImage==6
+        C7=PredictedImage==7
+        PredictedImage[GO2==1]=4
+        PredictedImage[C6]=6#restitute rock classes
+        PredictedImage[C7]=7
+        C6=None
+        C7=None
     #Set the front in the predicted image as class 8
     if cfront.any() and (np.sum(1*cfront.reshape(1,-1))<np.sqrt(cfront.shape[0]**2+cfront.shape[1]**2)):#front has to be shorter than the diagonal of the image or else it's an error
         PredictedImage_display=copy.deepcopy(PredictedImage)
@@ -693,6 +688,7 @@ for i,im in enumerate(Imagelist):
         PredictedImage_class=copy.deepcopy(PredictedImage)
         print('WARNING: calving front detection failed for '+os.path.basename(im))
         validate_edge=False
+    
 
     
     if validate_edge:
@@ -707,7 +703,7 @@ for i,im in enumerate(Imagelist):
         XP=np.concatenate((Xp,Yp), axis=1)
 
         D=scipy.spatial.distance.cdist(XP, XM, metric='euclidean')
-        mindist=10*np.min(D, axis=1)
+        mindist=10*np.min(D, axis=0)
             
         ImageRoot=os.path.basename(im)[:-4]
         distname=ScorePath+ImageRoot+'_cfdistances'

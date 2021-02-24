@@ -26,11 +26,14 @@ def toc():
 tic()
 
 folder='/media/patrice/DataDrive/SEE_ICE/Train/'
+OutputName='Tensor50k'
 tilesize=100
 bands=4
 classes=7
-subsample=0.40#percentage subsample in each class
+subsample=1#percentage subsample in each class
 NormFactor=8192 #will save a normalised tensor ready for the CNN, better for memory to normalise now
+UINT8=False #if true this will overide NormFactor and reduce the radiometry to 8-bit via normalisation by 16384
+FP16=True #cast final tensor in float 16 for mixed precision training
 
 Itot=0
 for c in range(1,classes+1):
@@ -44,8 +47,8 @@ print ('found '+str(Itot)+' tile samples')
 
 
 
-MasterTensor=np.zeros((int(subsample*Itot),tilesize,tilesize,bands),dtype='float16')
-MasterLabel=np.zeros((int(subsample*Itot)),dtype='float16')
+MasterTensor=np.zeros((int(subsample*Itot),tilesize,tilesize,bands), dtype='float16')
+MasterLabel=np.zeros((int(subsample*Itot)), dtype='float16')
 
 tile=0
 for c in range(1,classes+1):
@@ -56,14 +59,46 @@ for c in range(1,classes+1):
     for i in range(len(idx)):
         I=io.imread(clist[idx[i]]).reshape((1,tilesize,tilesize,bands))
         Label=c
-        MasterTensor[tile,:,:,:] = np.float16(I/NormFactor)
-        MasterLabel[tile] = np.float16(Label)
+        MasterLabel[tile] = Label
+        if UINT8 and not(FP16):
+            MasterTensor=np.uint8(MasterTensor)
+            MasterTensor[tile,:,:,:] = np.uint8(255*I/16384)
+        elif FP16 and UINT8:
+            MasterTensor=np.float16(MasterTensor)
+            I= np.uint8(255*I/16384)
+            MasterTensor[tile,:,:,:]=np.float16(I/255)
+        elif not(UINT8) and FP16:
+            MasterTensor=np.float16(MasterTensor)
+            MasterTensor[tile,:,:,:]=np.float16(I/NormFactor)
+        else:
+            MasterTensor=np.int16(MasterTensor)
+            MasterTensor[tile,:,:,:]=np.int16(I)
         tile+=1
     print('Class '+str(c)+' compiled')
         
+if UINT8 and not(FP16):#downsample radiometry and save as uint8
+
+    np.save(folder+OutputName+'_T_uint8',MasterTensor)
+    np.save(folder+OutputName+'_L_uint8',MasterLabel)
+    
+elif FP16 and UINT8:#data will be float 16, but first they have been downsampled to 8bit before normalisation
+
+    np.save(folder+OutputName+'_T_uint8float16',MasterTensor)
+    np.save(folder+OutputName+'_L_uint8float16',MasterLabel)
+    
+elif not(UINT8) and FP16:
+    
+    np.save(folder+OutputName+'_T_float16',MasterTensor)
+    np.save(folder+OutputName+'_L_float16',MasterLabel) 
+    
+else:
+
+    np.save(folder+OutputName+'_T_int16',MasterTensor)
+    np.save(folder+OutputName+'_L_int16',MasterLabel)
 
 #Output as npy arrays for both the tensor and the label
-np.save(folder+'Med30kTensor'+str(tilesize),MasterTensor)
-np.save(folder+'Med30kLabel'+str(tilesize),MasterLabel)
+
+
+
 toc()
     
