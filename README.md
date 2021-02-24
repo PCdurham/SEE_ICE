@@ -1,6 +1,12 @@
 # SEE_ICE
 Classification of Glacial Landscapes using CNN-Supervised Classification (CSC) ([Carbonneau et al. 2020](https://www.sciencedirect.com/science/article/pii/S0034425720304806)) :snowflake:
 
+##Major Update in progress
+Adding:
+-Tensorflow v2.4 (python 3.8) with support for mixed precision training on RTX GPUs
+-Geotif outputs when input is itself a geotif
+-Calving front detection sub-routine based on morphological active contours as implemented in scikit-image
+-Additional validation functionality for claving fronts and valley margin edges
 
 ## Description
 
