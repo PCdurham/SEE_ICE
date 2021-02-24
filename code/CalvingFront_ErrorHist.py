@@ -14,7 +14,7 @@ import os
 
 
 
-ScorePath1 = '/media/patrice/DataDrive/SEE_ICE/VGG16_50_RGBNIR_fp16_kernel3/'
+ScorePath1 = '/media/patrice/DataDrive/SEE_ICE/Jak_VGG16_50_RGBNIR_fp16_kernel5/'
 
 DatList=glob.glob(ScorePath1+'*.npy')
 
@@ -39,5 +39,5 @@ plt.title('master')
 
 print('Modal error= '+str(int(statistics.mode(MasterData))))
 print('median error '+str(int(np.median(MasterData))))
-print('mean error '+str(int(np.mean(MasterData))))
-print('stdev error '+str(int(np.std(MasterData))))
+print('mean error '+str((np.mean(MasterData))))
+print('stdev error '+str((np.std(MasterData))))
