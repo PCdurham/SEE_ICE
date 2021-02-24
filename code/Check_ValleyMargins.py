@@ -55,7 +55,7 @@ TotalDistances=TotalDistances[1:]
 sns.histplot(TotalDistances, binwidth=10)
 print('Modal error= '+str(int(statistics.mode(TotalDistances))))
 print('median error '+str(int(np.median(TotalDistances))))
-print('mean error '+str(int(np.median(TotalDistances))))
+print('mean error '+str(int(np.mean(TotalDistances))))
 print('stdev error '+str(int(np.std(TotalDistances))))
        
     # ImageRoot=os.path.basename(im)[:-4]

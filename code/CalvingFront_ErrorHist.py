@@ -39,5 +39,5 @@ plt.title('master')
 
 print('Modal error= '+str(int(statistics.mode(MasterData))))
 print('median error '+str(int(np.median(MasterData))))
-print('mean error '+str(int(np.median(MasterData))))
+print('mean error '+str(int(np.mean(MasterData))))
 print('stdev error '+str(int(np.std(MasterData))))
