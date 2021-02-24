@@ -110,7 +110,8 @@ SmallestElement = 2 # Despeckle the classification to the smallest length in pix
 '''MODEL PARAMETERS''' #These would usually not be edited
 LearningRate = 0.001
 Chatty = 1 # set the verbosity of the model training.  Use 1 at first, 0 when confident that model is well tuned
-
+Patience=10 #smaller cCNN require more patience, as much as 15, bigger can be 5
+minimumdelta=0.005
 ###############################################################################
 '''setup for RTX use of mixed precision'''
 #Needs Tensorflow 2.4 and an RTX GPU
@@ -575,7 +576,7 @@ for i,im in enumerate(Imagelist):
         print('Fitting compact CNN Classifier on ' + str(I_Stride1Tiles.shape[0]) + ' tiles')
     else:
         print('Fitting MLP Classifier on ' + str(I_Stride1Tiles.shape[0]) + ' pixels')
-    callback = tf.keras.callbacks.EarlyStopping(monitor='val_accuracy', patience=15, min_delta=0.001, restore_best_weights=(True))
+    callback = tf.keras.callbacks.EarlyStopping(monitor='val_accuracy', patience=Patience, min_delta=minimumdelta, restore_best_weights=(True))
     (trainX, testX, trainY, testY) = train_test_split(I_Stride1Tiles, Labels1Hot, test_size=0.2)
     history=model.fit(x=trainX, y=trainY, epochs=TrainingEpochs, batch_size=int(500000/Kernel_size**2), verbose=Chatty, validation_data = (testX, testY),callbacks=[callback])
     I_stride1Tiles=None       
