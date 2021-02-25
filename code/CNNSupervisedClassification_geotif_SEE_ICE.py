@@ -75,6 +75,7 @@ from IPython import get_ipython #this can be removed if not using Spyder
 import glob
 import gdal
 from skimage.segmentation import morphological_geodesic_active_contour
+from skimage.segmentation import clear_border
 import statistics                                  
 ###############################################################################
 
@@ -83,8 +84,8 @@ import statistics
 
 ModelName = 'VGG16_50_RGBNIRfloat16_98acc'     #should be the model name from previous run of TrainCNN.py
 ModelPath = '/media/patrice/DataDrive/SEE_ICE/Models/'  #location of the model
-PredictPath = '/media/patrice/DataDrive/SEE_ICE/Validate/Seen_Validation_Helheim/'#'Validate/Seen_Validation_Helheim/'#H13_09_19_3000px\\#Sc01_08_19_3000px\\'   #Location of the images
-ScorePath = '/media/patrice/DataDrive/SEE_ICE/Hel_VGG16_50_RGBNIR_fp16_kernel15/' #Results_Sc01_08_19_3000px\\Tiles100_results\\RGBNIR\\Patch_1\\'      #location of the output files and the model
+PredictPath = '/media/patrice/DataDrive/SEE_ICE/debug'#'Validate/Seen_Validation_Helheim/'#'Validate/Seen_Validation_Helheim/'#H13_09_19_3000px\\#Sc01_08_19_3000px\\'   #Location of the images
+ScorePath = '/media/patrice/DataDrive/SEE_ICE/debug/'#'/Hel_VGG16_50_RGBNIR_fp16_kernel15/' #Results_Sc01_08_19_3000px\\Tiles100_results\\RGBNIR\\Patch_1\\'      #location of the output files and the model
 Experiment = 'VGGIR_50'    #ID with model, bands and tilesize, kernel size will be added further down
 
 
@@ -110,7 +111,7 @@ SmallestElement = 2 # Despeckle the classification to the smallest length in pix
 '''MODEL TRAINING PARAMETERS''' #These would usually not be edited
 LearningRate = 0.001
 Chatty = 1 # set the verbosity of the model training.  Use 1 at first, 0 when confident that model is well tuned
-Patience=5 #smaller cCNN require more patience, as much as 15, bigger can be 5. Use 20 for the MLP (kernel size 1)
+Patience=7 #smaller cCNN require more patience, as much as 15, bigger can be 5. Use 20 for the MLP (kernel size 1)
 minimumdelta=0.005
 ###############################################################################
 Experiment=Experiment+'k'+str(Kernel_size)
@@ -338,6 +339,16 @@ def BlankFrame(Image):
     Image[:,Image.shape[1]-10:Image.shape[1] ]=np.zeros((Image.shape[0], 10))
     
     return Image
+
+def NoOceanBorder(Ocean): #clears ocean objects that touch the image border with the exception of the biggest one
+    Olabel=label(Ocean, connectivity=2)
+    [c, count]=np.unique(Olabel, return_counts=True)
+    c=c[1:]
+    count=count[1:]
+    BiggestOcean=(Olabel==np.argmax(count)+1)
+    
+    return np.logical_or(clear_border(Olabel, buffer_size=10)>0, BiggestOcean)
+
 
 
 # =============================================================================
@@ -618,7 +629,7 @@ for i,im in enumerate(Imagelist):
     try:
         G2=1*(PredictedImage==4)
         OceanPixels=np.logical_or(PredictedImage==2, PredictedImage==1)
-        RealOcean=np.logical_or(OceanPixels, PredictedImage==3)
+        RealOcean=NoOceanBorder(np.logical_or(OceanPixels, PredictedImage==3))
         # O2label=label(O2, connectivity=1)
         # [c, count]=np.unique(O2label, return_counts=True)
         # c=c[1:]
@@ -658,7 +669,7 @@ for i,im in enumerate(Imagelist):
         
     
         
-        # Overlap_b4dilate=np.logical_and(RealGlacier,RealOcean)
+        #Overlap_b4dilate=np.logical_and(RealGlacier,RealOcean)
         # RealGlacier=np.logical_and(RealGlacier, np.logical_not(Overlap_b4dilate))
         # RealOcean=np.logical_and(RealOcean, np.logical_not(Overlap_b4dilate))
         GlacierContour=binary_closing(GlacierContour, selem=np.ones((3,3)))
