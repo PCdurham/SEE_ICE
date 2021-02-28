@@ -11,7 +11,7 @@ import glob
 import numpy as np
 from sklearn import metrics
 
-folder='/media/patrice/DataDrive/SEE_ICE/Hel_DENSE121_50_RGB_fp16_patch7/'
+folder='/media/patrice/DataDrive/SEE_ICE/Jak_VGG16_100_RGBNIR_fp16_patch7/'
 subsample=1000000 #use 0 for all points, else give number of points
 
 
