@@ -84,8 +84,8 @@ import statistics
 
 ModelName = 'VGG16_50_RGBNIRfloat16_98acc'     #should be the model name from previous run of TrainCNN.py
 ModelPath = '/media/patrice/DataDrive/SEE_ICE/Models/'  #location of the model
-PredictPath = '/media/patrice/DataDrive/SEE_ICE/debug'#'Validate/Seen_Validation_Helheim/'#'Validate/Seen_Validation_Helheim/'#H13_09_19_3000px\\#Sc01_08_19_3000px\\'   #Location of the images
-ScorePath = '/media/patrice/DataDrive/SEE_ICE/debug/'#'/Hel_VGG16_50_RGBNIR_fp16_kernel15/' #Results_Sc01_08_19_3000px\\Tiles100_results\\RGBNIR\\Patch_1\\'      #location of the output files and the model
+PredictPath = '/media/patrice/DataDrive/SEE_ICE/Validate/Unseen_Validation_Jakobshavn/'#'Validate/Seen_Validation_Helheim/'#H13_09_19_3000px\\#Sc01_08_19_3000px\\'   #Location of the images
+ScorePath = '/media/patrice/DataDrive/SEE_ICE/Jak_VGG16_50_RGBNIR_fp16_kernel' #Results_Sc01_08_19_3000px\\Tiles100_results\\RGBNIR\\Patch_1\\'      #location of the output files and the model
 Experiment = 'VGGIR_50'    #ID with model, bands and tilesize, kernel size will be added further down
 
 
@@ -108,14 +108,15 @@ ImFilterSize=1 #median filtering, use 1 for no filter
 SmallestElement = 2 # Despeckle the classification to the smallest length in pixels of element remaining, just enter linear units (e.g. 3 for 3X3 pixels)
 
 
-'''MODEL TRAINING PARAMETERS''' #These would usually not be edited
+'''MODEL TRAINING PARAMETERS''' 
 LearningRate = 0.001
 Chatty = 1 # set the verbosity of the model training.  Use 1 at first, 0 when confident that model is well tuned
-Patience=7 #smaller cCNN require more patience, as much as 15, bigger can be 5. Use 20 for the MLP (kernel size 1)
+Patience=10 #smaller cCNN require more patience, as much as 15, bigger can be 10. Use 50 for the MLP (kernel size 1)
 minimumdelta=0.005
 ###############################################################################
+#adjust some names for the kernel size
 Experiment=Experiment+'k'+str(Kernel_size)
-
+ScorePath=ScorePath+str(Kernel_size)+'/'
 
 '''setup for RTX use of mixed precision'''
 #Needs Tensorflow 2.4 and an RTX GPU

@@ -11,8 +11,8 @@ import glob
 import numpy as np
 from sklearn import metrics
 
-folder='/media/patrice/DataDrive/SEE_ICE/Hel_VGG16_50_RGBNIR_fp16_kernel7/'
-subsample=5000000 #use 0 for all points, else give number of points
+folder='/media/patrice/DataDrive/SEE_ICE/Hel_DENSE121_50_RGB_fp16_patch7/'
+subsample=1000000 #use 0 for all points, else give number of points
 
 
 def tic():
