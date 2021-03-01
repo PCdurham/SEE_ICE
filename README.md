@@ -53,7 +53,15 @@ The pre-trained phase one CNN can be implemented to create image-specific traini
 
 If the parameter space exploration is required for tile size and patch size variables, use the batch script.  this will need a csv as an input where each line has the paramenters for a given job.  required columns as as follows:
 
-- __Model  
+- **Model** gives the name of the model. Do not add the h5 extension and don't use a full path.  Folder is is a script input
+- **DataSource** gives the folder where the input files are located.  these are assumed to be the 4 band tif image, a validation class raster and an edge raster.
+- **OutFolder** gives the partial name of the output folder where results will be written.  Do not add a final / (or \\).  the script will append the patch size to the name and create this folder.
+- **EportShortHand** gives a short name for the experiment added into some results file name.
+- **Dims** gives the bands (number of channels) for the experiement.  Use 3 for RGB and 4 for NIR+RGB.
+- **PatchSize** gives the size of the local phase 2 compact CNN or MLP.  Use 1 for the MLP and 3,5,7 or 15 for the compact CNN 
+- **TileSize** gives the XY tile size (eg 50, 75 or 100) expected by the pre-trained CNN model.
+-  **WholeImage** is 1 or 0.  Set to 1 if your computer has sufficient RAM to classify a whole image.  Note that for the compact CNN, memory usage increases fast.  EG a 15x15 patch size on a 3000x3000x4 Seninel 2 sub0image will need in excess of 100 Gb of ram to keep the ca. [9000000, 15,15,4] tensor.
+-  
 
 
 
