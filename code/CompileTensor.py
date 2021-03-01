@@ -25,9 +25,9 @@ def toc():
 
 tic()
 
-folder='/media/patrice/DataDrive/SEE_ICE/Train/'
-OutputName='Tensor50k'
-tilesize=100
+folder='/media/patrice/DataDrive/SEE_ICE/JointTrain/'
+OutputName='JointTensor5k'
+tilesize=50
 bands=4
 classes=7
 subsample=1#percentage subsample in each class

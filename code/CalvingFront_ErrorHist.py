@@ -14,7 +14,7 @@ import os
 
 
 
-ScorePath1 = '/media/patrice/DataDrive/SEE_ICE/Jak_VGG16_50_RGB_fp16_patch15/'
+ScorePath1 = '/media/patrice/DataDrive/SEE_ICE/Sto_VGG16_50_RGBNIR_fp16_patch7/'
 
 DatList=glob.glob(ScorePath1+'*.npy')
 

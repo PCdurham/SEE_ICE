@@ -26,17 +26,17 @@ from IPython import get_ipython #this can be removed if not using Spyder
 
 
 '''User Inputs'''
-TensorPath = '/media/patrice/DataDrive/SEE_ICE/Train/Tensor30k_T_float16.npy'  #location of the tile tensor
-LabelPath = '/media/patrice/DataDrive/SEE_ICE/Train/Tensor30k_L_float16.npy' #location of the labels
-OutPath='/media/patrice/DataDrive/SEE_ICE/Train/'  
+TensorPath = '/media/patrice/DataDrive/SEE_ICE/JointTrain/JointTensor5k_T_float16.npy'  #location of the tile tensor
+LabelPath = '/media/patrice/DataDrive/SEE_ICE/JointTrain/JointTensor5k_L_float16.npy' #location of the labels
+OutPath='/media/patrice/DataDrive/SEE_ICE/JointTrain/'  
 ModelTuning=False
-TuningDataName='VGG16_75_RGBNIRfloat16_99acc'
+TuningDataName='VGG16_50_Joint_RGBNIRfloat16_985acc'
 NClasses=7
 NIR=True
-Tilesize=75
+Tilesize=50
 CNNname='VGG' # choose NAS for NASNET large, VGG for VGG16 or Dense for Densenet 121
 batches=50 #try 200 for 50x50 tiles
-targetacc=0.99
+targetacc=0.985
 
 
 '''custom callback for accuracy target training'''

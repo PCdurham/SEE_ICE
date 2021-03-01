@@ -10,8 +10,8 @@ import os
 import glob
 import numpy as np
 
-DataFolder = '/media/patrice/DataDrive/SEE_ICE/Train/' 
-RemainingTiles=40000
+DataFolder = '/media/patrice/DataDrive/SEE_ICE/JointTrain/' 
+RemainingTiles=5000
 
 for f in range(1,8):
     ilist=glob.glob(DataFolder+'C'+str(f)+'/*.tif')
