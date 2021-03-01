@@ -60,8 +60,12 @@ If the parameter space exploration is required for tile size and patch size vari
 - **Dims** gives the bands (number of channels) for the experiement.  Use 3 for RGB and 4 for NIR+RGB.
 - **PatchSize** gives the size of the local phase 2 compact CNN or MLP.  Use 1 for the MLP and 3,5,7 or 15 for the compact CNN 
 - **TileSize** gives the XY tile size (eg 50, 75 or 100) expected by the pre-trained CNN model.
--  **WholeImage** is 1 or 0.  Set to 1 if your computer has sufficient RAM to classify a whole image.  Note that for the compact CNN, memory usage increases fast.  EG a 15x15 patch size on a 3000x3000x4 Seninel 2 sub0image will need in excess of 100 Gb of ram to keep the ca. [9000000, 15,15,4] tensor.
--  
+-  **WholeImage** is 1 or 0.  Set to 1 if your computer has sufficient RAM to classify a whole image.  Note that for the compact CNN, memory usage increases fast.  EG a 15x15 patch size on a 3000x3000x4 Seninel 2 sub-image will need in excess of 100 Gb of ram to keep the ca. [9000000, 15,15,4] tensor.  To make this operation possible on much lower ram, use WholeImage = 0 and the script will classify row-by-row.
+-  **Done** is a progress check column. Set to 0 at first and after completion, the script will set completed jobs to 1.
+
+Save this information as a csv and the batch script will read it as a pandas dataframe and loop through each job.
+
+  
 
 
 
