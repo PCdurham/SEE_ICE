@@ -1,12 +1,20 @@
 # SEE_ICE
 Classification of Glacial Landscapes using CNN-Supervised Classification (CSC) ([Carbonneau et al. 2020](https://www.sciencedirect.com/science/article/pii/S0034425720304806)) :snowflake:
 
-## Major Update in progress...
-Adding:
-- Tensorflow v2.4 (python 3.8) with support for mixed precision training on RTX GPUs
+## March 2021 Update
+Added:
+- Tensorflow v2.4 (Python 3.8) with support for mixed precision training on RTX GPUs
+- Alternative workflow where tensors can be saved to disk as large 4D numpy arrays and used in CNN training.  
 - Geotif outputs when input is itself a geotif
 - Calving front detection sub-routine based on morphological active contours as implemented in scikit-image
 - Additional validation functionality for calving fronts and valley margin edges
+
+## Key Dependencies
+- Python 3.8
+- Tensorflow 2.4
+- gdal
+- scikit-image
+- scikit-learn
 
 ## Description
 
@@ -19,16 +27,7 @@ The methods and code provided here allow pixel-level semantic classification of 
 1. Snow on Rock
 1. Rock
 
-## Dependencies
-* Keras (We used Tensorflow version 2.1)
-* Scikit-Learn
-* Scikit-Image
-* Pandas
-* Numpy
-* Matplotlib
  
-We used the [Anaconda distribution](https://www.anaconda.com/products/individual) of Python 3 (written in version 3.7) which installs all the required libraries except tensorflow.
-
 ## Application
 ### Training VGG16 Convolutional Neural Networks
 #### Step 1: Data Preparation
@@ -36,6 +35,8 @@ We used the [Anaconda distribution](https://www.anaconda.com/products/individual
 _**Sentinel 2 Imagery**_ The code was designed for application on  Sentinel-2 imagery (Bands 4, 3, 2, and 8) which should be combined into composite four-band images and cropped to the desired training area. Training also requires a class raster (created manually using rasterised polygons) composed of the seven classes detailed in the **Description** section above. This can be done using GIS software (e.g. QGIS/ArcGIS).
 
 _**Image Tiles**_ The scripts for phase one CNN training require input data in the form of tiled 4D tensors. Cropped Sentinel-2 images and associated class rasters can be tiled, labelled, and augmented using the [TilePreparation_CNNTrainingData.py](https://github.com/PCdurham/SEE_ICE/blob/master/code/TilePreparation_CNNTrainingData.py) script which tiles input images according to a specified tile size and stride, and randomly allocates them to training and validation data folders primed for phase one CNN training.
+
+_**Single Tensors**_ If 32 Gb or more are RAM is available (recommend 64 Gb), a single tensor can be compiled and saved to disk as a large 4D numpy array. Use the script thin_Tiles.py to select a random subset of tiles that will be balanced for each class.  Then run Compile_tensor to create both tensor and label .npy arrays save to disk.
 
 #### Step 2: Phase One CNN Training
 
