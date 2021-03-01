@@ -87,7 +87,8 @@ import time
 
 '''Input CSV file here'''
 Joblistfile='/media/patrice/DataDrive/SEE_ICE/JobList.csv'
-Jobstart=34 #remember to start at 0
+ModelPath = '/media/patrice/DataDrive/SEE_ICE/Models/'  #location of the models, assumed the same for all jobs
+Jobstart=57 #0 if new, but other if starting in the middle of a job list
 Joblist=pd.read_csv(Joblistfile)
 
 
@@ -341,7 +342,6 @@ for JobNumber in range(Jobstart, len(Joblist.index)):
         
     '''PARAMETERS'''
     ModelName = Joblist['Model'][JobNumber]
-    ModelPath = '/media/patrice/DataDrive/SEE_ICE/Models/'  #location of the model
     PredictPath = Joblist['DataSource'][JobNumber]
     ScorePath = Joblist['OutFolder'][JobNumber]
     Experiment = Joblist['ExpShortHand'][JobNumber]
@@ -653,11 +653,15 @@ for JobNumber in range(Jobstart, len(Joblist.index)):
             G2=1*(PredictedImage==4)
             OceanPixels=np.logical_or(PredictedImage==2, PredictedImage==1)
             RealOcean=NoOceanBorder(np.logical_or(OceanPixels, PredictedImage==3))
-            # O2label=label(O2, connectivity=1)
-            # [c, count]=np.unique(O2label, return_counts=True)
-            # c=c[1:]
-            # count=count[1:]
-            # RealOcean=1*(O2label==np.argmax(count)+1)
+            O2label=label(RealOcean, connectivity=1)
+            [c, count]=np.unique(O2label, return_counts=True)
+            c=c[1:]
+            count=count[1:]
+            RealOcean=np.zeros((O2label.shape[0], O2label.shape[1]), dtype='bool')
+            for o in range(len(count)):
+                if count[o]>10000: #1km square min size to be ocean
+                    RealOcean=np.logical_or(RealOcean, (O2label==o+1))
+            RealOcean=1*RealOcean
             G2label=label(G2, connectivity=1)
             [c, count]=np.unique(G2label, return_counts=True)
             c=c[1:]
