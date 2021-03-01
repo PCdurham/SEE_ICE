@@ -14,7 +14,7 @@ import os
 
 
 
-ScorePath1 = '/media/patrice/DataDrive/SEE_ICE/DenseNet121_50_kernel5/'
+ScorePath1 = '/media/patrice/DataDrive/SEE_ICE/Jak_VGG16_50_RGB_fp16_patch15/'
 
 DatList=glob.glob(ScorePath1+'*.npy')
 
@@ -26,6 +26,7 @@ for d in range(0, len(DatList)):
         plt.figure()
         sns.histplot(data=data, binwidth=(10))
         plt.title('Catastrophic error for '+os.path.basename(DatList[d]))
+        MasterData=np.concatenate((MasterData,data), axis=0)
     else:
     
         MasterData=np.concatenate((MasterData,data), axis=0)
@@ -34,10 +35,14 @@ for d in range(0, len(DatList)):
 
 MasterData=MasterData[1:]
 plt.figure()   
-sns.histplot(data=MasterData, binwidth=(10))
+n_bins=np.asarray(range(0,510,10))
+
+sns.histplot(data=np.clip(MasterData, n_bins[0], n_bins[-1]), bins=n_bins)
 plt.title('master')
 
 print('Modal error= '+str(int(statistics.mode(MasterData))))
 print('median error '+str(int(np.median(MasterData))))
-print('mean error '+str(int(np.median(MasterData))))
-print('stdev error '+str(int(np.std(MasterData))))
+print('mean error '+str((np.mean(MasterData))))
+print('stdev error '+str((np.std(MasterData))))
+betterthan100=int(100*np.sum(1*MasterData<100)/len(MasterData))
+print(str(betterthan100),'% of data below 100m error')

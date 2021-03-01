@@ -75,42 +75,49 @@ from IPython import get_ipython #this can be removed if not using Spyder
 import glob
 import gdal
 from skimage.segmentation import morphological_geodesic_active_contour
-                                  
+from skimage.segmentation import clear_border
+import statistics                                  
 ###############################################################################
 
 
 """User data input. Fill in the info below before running"""
 
-ModelName = 'DenseNet121_50_RGB_985acc'     #should be the model name from previous run of TrainCNN.py
+ModelName = 'VGG16_50_RGBNIRfloat16_98acc'     #should be the model name from previous run of TrainCNN.py
 ModelPath = '/media/patrice/DataDrive/SEE_ICE/Models/'  #location of the model
-PredictPath = '/media/patrice/DataDrive/SEE_ICE/Validate/Seen_Validation_Helheim/'#'Validate/Seen_Validation_Helheim/'#H13_09_19_3000px\\#Sc01_08_19_3000px\\'   #Location of the images
-ScorePath = '/media/patrice/DataDrive/SEE_ICE/TestOutput/' #Results_Sc01_08_19_3000px\\Tiles100_results\\RGBNIR\\Patch_1\\'      #location of the output files and the model
-Experiment = 'FinalTest'    #ID to append to output performance files
+PredictPath = '/media/patrice/DataDrive/SEE_ICE/Validate/Unseen_Validation_Jakobshavn/'#'Validate/Seen_Validation_Helheim/'#H13_09_19_3000px\\#Sc01_08_19_3000px\\'   #Location of the images
+ScorePath = '/media/patrice/DataDrive/SEE_ICE/Jak_VGG16_50_RGBNIR_fp16_kernel' #Results_Sc01_08_19_3000px\\Tiles100_results\\RGBNIR\\Patch_1\\'      #location of the output files and the model
+Experiment = 'VGGIR_50'    #ID with model, bands and tilesize, kernel size will be added further down
 
 
 '''BASIC PARAMETER CHOICES'''
-TrainingEpochs = 300 #will use early stopping with a patience of 15
-Ndims = 3 # Feature Dimensions for the pre-trained CNN.
+TrainingEpochs = 300 #will use early stopping
+Ndims = 4 # Feature Dimensions for the pre-trained CNN.
 NClasses = 7  #The number of classes in the data. This MUST be the same as the classes used to retrain the model
 Filters = 32
-Kernel_size = 5 #1,3,5,7,15 are valid
+Kernel_size = 15 #1,3,5,7,15 are valid
 size = 50#size of the prediction tiles
-CNNsamples= 250000 #number of subsamples PER CLASS to extract and train cCNN or MLP
-SizeThresh=30#number of image megapixels your ram can handle, 
+CNNsamples= 500000 #number of subsamples PER CLASS to extract and train cCNN or MLP
+SizeThresh=3#number of image megapixels your ram can handle, 
 GACglacier=True #if true the geodetic contour will be used to refine the glacier class
 DisplayHoldout =  False #Display the results figure which is saved to disk.  
 OutDPI = 400 #Recommended 150 for inspection 1200 for papers.  
 
 '''FILTERING OPTIONS'''
 #These parameters offer extra options to smooth the classification outputs.  By default they are set
+ImFilterSize=1 #median filtering, use 1 for no filter
 SmallestElement = 2 # Despeckle the classification to the smallest length in pixels of element remaining, just enter linear units (e.g. 3 for 3X3 pixels)
 
 
-'''MODEL PARAMETERS''' #These would usually not be edited
+'''MODEL TRAINING PARAMETERS''' 
 LearningRate = 0.001
 Chatty = 1 # set the verbosity of the model training.  Use 1 at first, 0 when confident that model is well tuned
-
+Patience=10 #smaller cCNN require more patience, as much as 15, bigger can be 10. Use 50 for the MLP (kernel size 1)
+minimumdelta=0.005
 ###############################################################################
+#adjust some names for the kernel size
+Experiment=Experiment+'k'+str(Kernel_size)
+ScorePath=ScorePath+str(Kernel_size)+'/'
+
 '''setup for RTX use of mixed precision'''
 #Needs Tensorflow 2.4 and an RTX GPU
 if ('RTX' in os.popen('nvidia-smi -L').read()) and ('2.4' in tf.__version__):
@@ -334,6 +341,16 @@ def BlankFrame(Image):
     
     return Image
 
+def NoOceanBorder(Ocean): #clears ocean objects that touch the image border with the exception of the biggest one
+    Olabel=label(Ocean, connectivity=2)
+    [c, count]=np.unique(Olabel, return_counts=True)
+    c=c[1:]
+    count=count[1:]
+    BiggestOcean=(Olabel==np.argmax(count)+1)
+    
+    return np.logical_or(clear_border(Olabel, buffer_size=10)>0, BiggestOcean)
+
+
 
 # =============================================================================
 #fetches the overall avg F1 score from a classification report
@@ -490,7 +507,8 @@ for f in range(len(Folderlist)):
     ImageName=os.path.basename(Folderlist[f])
     if not(Folderlist[f].__contains__('SCLS')):
         if not(Folderlist[f].__contains__('EDGE')):
-            Imagelist.append(Folderlist[f])
+            if not(Folderlist[f].__contains__('VM')):
+                Imagelist.append(Folderlist[f])
     
 
 
@@ -573,13 +591,13 @@ for i,im in enumerate(Imagelist):
         print('Fitting compact CNN Classifier on ' + str(I_Stride1Tiles.shape[0]) + ' tiles')
     else:
         print('Fitting MLP Classifier on ' + str(I_Stride1Tiles.shape[0]) + ' pixels')
-    callback = tf.keras.callbacks.EarlyStopping(monitor='val_accuracy', patience=15, min_delta=0.001, restore_best_weights=(True))
+    callback = tf.keras.callbacks.EarlyStopping(monitor='val_accuracy', patience=Patience, min_delta=minimumdelta, restore_best_weights=(True))
     (trainX, testX, trainY, testY) = train_test_split(I_Stride1Tiles, Labels1Hot, test_size=0.2)
     history=model.fit(x=trainX, y=trainY, epochs=TrainingEpochs, batch_size=int(500000/Kernel_size**2), verbose=Chatty, validation_data = (testX, testY),callbacks=[callback])
     I_stride1Tiles=None       
     '''Predict all pixels with line by line option to manage memory'''
-    SizeThresh=SizeThresh*1000000
-    if SizeThresh>=Im3D.shape[0]*Im3D.shape[1]:
+
+    if SizeThresh*1000000>=(Im3D.shape[0]*Im3D.shape[1]):
         print('Classifying whole image...')
         Tiles = np.squeeze(slide_rasters_to_tiles(Im3D[:,:,0:Ndims], Kernel_size))/NormFactor
         PredictedTiles = np.argmax(model.predict(Tiles, batch_size=25000), axis=1)
@@ -609,86 +627,84 @@ for i,im in enumerate(Imagelist):
 # # =============================================================================
 #'''Detect Calving front from binary morphology operations and active contours'''
     print('Detecting Calving Front')
-    
-    G2=1*(PredictedImage==4)
-    OceanPixels=np.logical_or(PredictedImage==2, PredictedImage==1)
-    RockPixels=np.logical_and(PredictedImage==6, PredictedImage==7)
-    O2=np.logical_or(OceanPixels, PredictedImage==3)
-    O2label=label(O2, connectivity=1)
-    [c, count]=np.unique(O2label, return_counts=True)
-    c=c[1:]
-    count=count[1:]
-    RealOcean=1*(O2label==np.argmax(count)+1)
-    G2label=label(G2, connectivity=1)
-    [c, count]=np.unique(G2label, return_counts=True)
-    c=c[1:]
-    count=count[1:]
-    RealGlacier=1*(G2label==np.argmax(count)+1)
-    # RealGlacier=binary_closing(RealGlacier, selem=np.ones((3,3)))
-    # RealOcean=binary_closing(RealOcean, selem=np.ones((3,3)))
-    # GO2=BlankFrame(scipy.ndimage.binary_fill_holes(RealGlacier))
-    RO2=1*scipy.ndimage.binary_fill_holes(RealOcean)
-    #deploy the geodetic active contours
-    RealGlacier=scipy.ndimage.binary_fill_holes(RealGlacier)
-    init_ls=1*binary_dilation(1*RealGlacier,selem=np.ones((5,5)))
-    init_ls=1*binary_closing(init_ls, selem=np.ones((30,30)))
-    init_ls=1*scipy.ndimage.binary_fill_holes(init_ls)
-    image = 1-(np.float32(1*RealGlacier))
-    GO2 = morphological_geodesic_active_contour(image, 30, init_ls,
-                                            smoothing=1, balloon=-0.5,
-                                            threshold=0.6)
-    GO2=scipy.ndimage.morphology.binary_erosion(GO2, iterations=2)
-    if GACglacier:#use the GAC to enforce the ice class of the main glacier, will in effect remove ocean-type pixels from the ice.
-        C6=PredictedImage==6
-        C7=PredictedImage==7
-        PredictedImage[GO2==1]=4
-        PredictedImage[C6]=6#restitute rock classes
-        PredictedImage[C7]=7
-        C6=None
-        C7=None
-        
-    RO2=np.logical_and(RO2, np.logical_not(GO2))
-    GO2=BlankFrame(GO2)
-    C=measure.find_contours(GO2, level=0.5)
-    csize=np.zeros(len(C))
-    for i in range(len(C)):
-        csize=C[i].shape[0]
-    MainContour=np.int16(C[np.argmax(csize)])
-    GlacierContour=np.zeros((GO2.shape))
-    for c in range(len(MainContour)):
-        GlacierContour[MainContour[c,0], MainContour[c,1]]=1
-    
-
-    
-    # Overlap_b4dilate=np.logical_and(RealGlacier,RealOcean)
-    # RealGlacier=np.logical_and(RealGlacier, np.logical_not(Overlap_b4dilate))
-    # RealOcean=np.logical_and(RealOcean, np.logical_not(Overlap_b4dilate))
-    GlacierContour=binary_closing(GlacierContour, selem=np.ones((3,3)))
-    RO2=binary_dilation(RO2, selem=np.ones((30,30)))
-    
-    Rock2=binary_dilation(RockPixels)
-    #GO2=binary_dilation(RealGlacier, selem=np.ones((2,2)))
-    cfront=np.logical_and(RO2,GlacierContour)
-    cfront=np.logical_and(cfront, np.logical_not(Rock2))
-
-    #cfront=np.zeros((10,10), dtype='bool')
-    if cfront.any():
-        cfrontlabel=label(cfront, connectivity=2)
-        [c, count]=np.unique(cfrontlabel, return_counts=True)
+    try:
+        G2=1*(PredictedImage==4)
+        OceanPixels=np.logical_or(PredictedImage==2, PredictedImage==1)
+        RealOcean=NoOceanBorder(np.logical_or(OceanPixels, PredictedImage==3))
+        # O2label=label(O2, connectivity=1)
+        # [c, count]=np.unique(O2label, return_counts=True)
+        # c=c[1:]
+        # count=count[1:]
+        # RealOcean=1*(O2label==np.argmax(count)+1)
+        G2label=label(G2, connectivity=1)
+        [c, count]=np.unique(G2label, return_counts=True)
         c=c[1:]
         count=count[1:]
-        cfront=(cfrontlabel==np.argmax(count)+1)
-    #cfront=binary_closing(cfront, selem=np.ones((1,1)))
-    #cfront=skeletonize(cfront) 
-
-    #Set the front in the predicted image as class 8
-    if cfront.any() and (np.sum(1*cfront.reshape(1,-1))<np.sqrt(cfront.shape[0]**2+cfront.shape[1]**2)):#front has to be shorter than the diagonal of the image or else it's an error
-        PredictedImage_display=copy.deepcopy(PredictedImage)
-        PredictedImage_class=copy.deepcopy(PredictedImage)
-        PredictedImage_class[cfront]=8
-        cfront=binary_dilation(cfront, selem=np.ones((10,10)))
-        PredictedImage_display[cfront]=8
-    else:
+        RealGlacier=1*(G2label==np.argmax(count)+1)
+        # RealGlacier=binary_closing(RealGlacier, selem=np.ones((3,3)))
+        # RealOcean=binary_closing(RealOcean, selem=np.ones((3,3)))
+        # GO2=BlankFrame(scipy.ndimage.binary_fill_holes(RealGlacier))
+        RO2=1*scipy.ndimage.binary_fill_holes(RealOcean)
+        #deploy the geodetic active contours
+        RealGlacier=scipy.ndimage.binary_fill_holes(RealGlacier)
+        init_ls=1*binary_dilation(1*RealGlacier,selem=np.ones((5,5)))
+        init_ls=1*binary_closing(init_ls, selem=np.ones((30,30)))
+        init_ls=1*scipy.ndimage.binary_fill_holes(init_ls)
+        image = 1-(np.float32(1*RealGlacier))
+        GO2 = morphological_geodesic_active_contour(image, 30, init_ls,
+                                                smoothing=1, balloon=-0.5,
+                                                threshold=0.6)
+        GO2=scipy.ndimage.morphology.binary_erosion(GO2, iterations=2)
+    
+            
+        RO2=np.logical_and(RO2, np.logical_not(GO2))
+        GO2=BlankFrame(GO2)
+        C=measure.find_contours(GO2, level=0.5)
+        csize=np.zeros(len(C))
+        for i in range(len(C)):
+            csize=C[i].shape[0]
+        MainContour=np.int16(C[np.argmax(csize)])
+        GlacierContour=np.zeros((GO2.shape))
+        for c in range(len(MainContour)):
+            GlacierContour[MainContour[c,0], MainContour[c,1]]=1
+        
+    
+        
+        #Overlap_b4dilate=np.logical_and(RealGlacier,RealOcean)
+        # RealGlacier=np.logical_and(RealGlacier, np.logical_not(Overlap_b4dilate))
+        # RealOcean=np.logical_and(RealOcean, np.logical_not(Overlap_b4dilate))
+        GlacierContour=binary_closing(GlacierContour, selem=np.ones((3,3)))
+        RO2=binary_dilation(RO2, selem=np.ones((30,30)))
+        cfront=np.logical_and(RO2,GlacierContour)
+        #cfront=np.zeros((10,10), dtype='bool')
+        if cfront.any():
+            cfrontlabel=label(cfront, connectivity=2)
+            [c, count]=np.unique(cfrontlabel, return_counts=True)
+            c=c[1:]
+            count=count[1:]
+            cfront=(cfrontlabel==np.argmax(count)+1)
+    
+        if GACglacier:#use the GAC to enforce the ice class of the main glacier, will in effect remove ocean-type pixels from the ice.
+            C6=PredictedImage==6
+            C7=PredictedImage==7
+            PredictedImage[GO2==1]=4
+            PredictedImage[C6]=6#restitute rock classes
+            PredictedImage[C7]=7
+            C6=None
+            C7=None
+        #Set the front in the predicted image as class 8
+        if cfront.any() and (np.sum(1*cfront.reshape(1,-1))<np.sqrt(cfront.shape[0]**2+cfront.shape[1]**2)):#front has to be shorter than the diagonal of the image or else it's an error
+            PredictedImage_display=copy.deepcopy(PredictedImage)
+            PredictedImage_class=copy.deepcopy(PredictedImage)
+            PredictedImage_class[cfront]=8
+            cfront=binary_dilation(cfront, selem=np.ones((10,10)))
+            PredictedImage_display[cfront]=8
+        else:
+            PredictedImage_display=copy.deepcopy(PredictedImage)
+            PredictedImage_class=copy.deepcopy(PredictedImage)
+            print('WARNING: calving front detection failed for '+os.path.basename(im))
+            validate_edge=False
+    except:
         PredictedImage_display=copy.deepcopy(PredictedImage)
         PredictedImage_class=copy.deepcopy(PredictedImage)
         print('WARNING: calving front detection failed for '+os.path.basename(im))
@@ -707,8 +723,11 @@ for i,im in enumerate(Imagelist):
         XP=np.concatenate((Xp,Yp), axis=1)
 
         D=scipy.spatial.distance.cdist(XP, XM, metric='euclidean')
-        mindist=10*np.min(D, axis=1)
-            
+        mindist=10*np.min(D, axis=0)
+        print('Modal error= '+str(int(statistics.mode(mindist))))
+        print('median error '+str(int(np.median(mindist))))
+        print('mean error '+str((np.mean(mindist))))
+        print('stdev error '+str((np.std(mindist))))    
         ImageRoot=os.path.basename(im)[:-4]
         distname=ScorePath+ImageRoot+'_cfdistances'
         np.save(distname, mindist)
