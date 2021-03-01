@@ -36,11 +36,13 @@ _**Sentinel 2 Imagery**_ The code was designed for application on  Sentinel-2 im
 
 _**Image Tiles**_ The scripts for phase one CNN training require input data in the form of tiled 4D tensors. Cropped Sentinel-2 images and associated class rasters can be tiled, labelled, and augmented using the [TilePreparation_CNNTrainingData.py](https://github.com/PCdurham/SEE_ICE/blob/master/code/TilePreparation_CNNTrainingData.py) script which tiles input images according to a specified tile size and stride, and randomly allocates them to training and validation data folders primed for phase one CNN training.
 
-_**Single Tensors**_ If 32 Gb or more are RAM is available (recommend 64 Gb), a single tensor can be compiled and saved to disk as a large 4D numpy array. Use the script thin_Tiles.py to select a random subset of tiles that will be balanced for each class.  Then run Compile_tensor to create both tensor and label .npy arrays save to disk.
+_**Saved Tensors**_ If 32 Gb or more are RAM is available (recommend 64 Gb), a single tensor can be compiled and saved to disk as a large 4D numpy array. Use the script thin_Tiles.py to select a random subset of tiles that will be balanced for each class.  Then run Compile_tensor to create both tensor and label .npy arrays save to disk.
 
 #### Step 2: Phase One CNN Training
 
 Following the organisation of model training data, the [Phase1_VGG16_RGB-RGBNIR.py](https://github.com/PCdurham/SEE_ICE/blob/master/code/Phase1_VGG16_RGB-RGBNIR.py) and [Phase1_VGG16_TransferLearning.py](https://github.com/PCdurham/SEE_ICE/blob/master/code/Phase1_VGG16_TransferLearning.py) scripts can be applied to train the adapted VGG16 architectures with either RGB or RGB+NIR bands and with or without transfer learning using ImageNet weights. User inputs are at the beginning of the script and show a list of variables initially labelled as 'Path' or 'Empty', these should be edited according to the users folder and file names. Following training, the model is saved and can be used in the CSC workflow without further training.
+
+Alterntatively, if you have saved a tensor and label as numpy arrays, you can run train_precompiled_CNN to produce a phase model from this data.
 
 ### Executing CSC
 #### Step 1: Tiling Imagery for Application
