@@ -26,8 +26,8 @@ import os
 
 ImFolder = '/media/patrice/DataDrive/SEE_ICE/RawData/'    #location of image to be tiled e.g. 'E:\\See_Ice\\TrainData\\'.
 DataFolder = '/media/patrice/DataDrive/SEE_ICE/'  #folder location for output tiles.
-size = 100           #size (in pixels) of output tiles.
-stride = 15         #number of pixels the tiler slides before extracting another tile.
+size = 50           #size (in pixels) of output tiles.
+stride = 25         #number of pixels the tiler slides before extracting another tile.
 
 
 # =============================================================================
@@ -72,29 +72,29 @@ def CropToTile (Im, size):
 #Save image tiles to disk based on their associated class 
     
 def save_tile(I, LabelVector, CurrentTile, DataFolder, size, stride):
-    PickFolder = np.random.uniform() #Picks a random number to allocate isolated tiles to folder (uniform between 0 and 1).
+    PickFolder = 0#np.random.uniform() #Picks a random number to allocate isolated tiles to folder (uniform between 0 and 1).
     TileName = 'T'+str(CurrentTile) + '.tif'
     if PickFolder <= 0.80: #For distributing in train and test folders.
         if LabelVector== 1:
-            IO.imsave(DataFolder+'Train'+'/C1/'+TileName, I)
+            IO.imsave(DataFolder+'JointTrain'+'/C1/'+TileName, I)
 
         elif LabelVector== 2:
-            IO.imsave(DataFolder+'Train'+'/C2/'+TileName, I)
+            IO.imsave(DataFolder+'JointTrain'+'/C2/'+TileName, I)
   
         elif LabelVector  == 3:
-            IO.imsave(DataFolder+'Train'+'/C3/'+TileName, I)
+            IO.imsave(DataFolder+'JointTrain'+'/C3/'+TileName, I)
 
         elif LabelVector  == 4:
-            IO.imsave(DataFolder+'Train'+'/C4/'+TileName, I)
+            IO.imsave(DataFolder+'JointTrain'+'/C4/'+TileName, I)
 
         elif LabelVector  == 5:
-            IO.imsave(DataFolder+'Train'+'/C5/'+TileName, I)
+            IO.imsave(DataFolder+'JointTrain'+'/C5/'+TileName, I)
  
         elif LabelVector  == 6:
-            IO.imsave(DataFolder+'Train'+'/C6/'+TileName, I)
+            IO.imsave(DataFolder+'JointTrain'+'/C6/'+TileName, I)
 
         elif LabelVector  == 7:
-            IO.imsave(DataFolder+'Train'+'/C7/'+TileName, I)
+            IO.imsave(DataFolder+'JointTrain'+'/C7/'+TileName, I)
 
     elif (PickFolder > 0.80):
         if LabelVector  == 1:
@@ -124,14 +124,22 @@ def save_tile(I, LabelVector, CurrentTile, DataFolder, size, stride):
 
 """ Processing """
 
-img = glob.glob(ImFolder + "Hel*.*")
+img = glob.glob(ImFolder + "*.tif")
+Imagelist=[]
+for f in range(len(img)):
+    ImageName=os.path.basename(img[f])
+    if not(img[f].__contains__('SCLS')):
+        if not(img[f].__contains__('EDGE')):
+            if not(img[f].__contains__('VM')):
+                Imagelist.append(img[f])
+
 #Tile sliding
 CurrentTile = 0
-for i in range(len(img)):
+for i in range(len(Imagelist)):
     #Load image
 
-    ImName=img[i]
-    TrainName=ImFolder +'SCLS_'+os.path.basename(img[i])
+    ImName=Imagelist[i]
+    TrainName=ImFolder +'SCLS_'+os.path.basename(Imagelist[i])
     Im3D = np.int16(IO.imread(ImName))
     ClassRaster = IO.imread(TrainName)
     im = CropToTile (Im3D, size)

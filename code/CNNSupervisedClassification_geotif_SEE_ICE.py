@@ -82,10 +82,10 @@ import statistics
 
 """User data input. Fill in the info below before running"""
 
-ModelName = 'VGG16_50_RGBNIRfloat16_98acc'     #should be the model name from previous run of TrainCNN.py
+ModelName = 'VGG16_50_Joint_RGBNIRfloat16_985acc'     #should be the model name from previous run of TrainCNN.py
 ModelPath = '/media/patrice/DataDrive/SEE_ICE/Models/'  #location of the model
-PredictPath = '/media/patrice/DataDrive/SEE_ICE/Validate/Unseen_Validation_Jakobshavn/'#'Validate/Seen_Validation_Helheim/'#H13_09_19_3000px\\#Sc01_08_19_3000px\\'   #Location of the images
-ScorePath = '/media/patrice/DataDrive/SEE_ICE/Jak_VGG16_50_RGBNIR_fp16_kernel' #Results_Sc01_08_19_3000px\\Tiles100_results\\RGBNIR\\Patch_1\\'      #location of the output files and the model
+PredictPath = '/media/patrice/DataDrive/SEE_ICE/Validate/Unseen_Validation_Store/'#'Validate/Seen_Validation_Helheim/'#H13_09_19_3000px\\#Sc01_08_19_3000px\\'   #Location of the images
+ScorePath = '/media/patrice/DataDrive/SEE_ICE/Sto_VGG16_50_RGBNIR_fp16' #Results_Sc01_08_19_3000px\\Tiles100_results\\RGBNIR\\Patch_1\\'      #location of the output files and the model
 Experiment = 'VGGIR_50'    #ID with model, bands and tilesize, kernel size will be added further down
 
 
@@ -94,10 +94,10 @@ TrainingEpochs = 300 #will use early stopping
 Ndims = 4 # Feature Dimensions for the pre-trained CNN.
 NClasses = 7  #The number of classes in the data. This MUST be the same as the classes used to retrain the model
 Filters = 32
-Kernel_size = 15 #1,3,5,7,15 are valid
+Kernel_size = 7 #1,3,5,7,15 are valid
 size = 50#size of the prediction tiles
 CNNsamples= 500000 #number of subsamples PER CLASS to extract and train cCNN or MLP
-SizeThresh=3#number of image megapixels your ram can handle, 
+SizeThresh=30#number of image megapixels your ram can handle, 
 GACglacier=True #if true the geodetic contour will be used to refine the glacier class
 DisplayHoldout =  False #Display the results figure which is saved to disk.  
 OutDPI = 400 #Recommended 150 for inspection 1200 for papers.  
@@ -111,12 +111,17 @@ SmallestElement = 2 # Despeckle the classification to the smallest length in pix
 '''MODEL TRAINING PARAMETERS''' 
 LearningRate = 0.001
 Chatty = 1 # set the verbosity of the model training.  Use 1 at first, 0 when confident that model is well tuned
-Patience=10 #smaller cCNN require more patience, as much as 15, bigger can be 10. Use 50 for the MLP (kernel size 1)
+Patience=7 #smaller cCNN require more patience, as much as 15, bigger can be 10. Use 50 for the MLP (kernel size 1)
 minimumdelta=0.005
 ###############################################################################
 #adjust some names for the kernel size
 Experiment=Experiment+'k'+str(Kernel_size)
-ScorePath=ScorePath+str(Kernel_size)+'/'
+ScorePath=ScorePath+'_patch'+str(Kernel_size)+'/'
+try:
+    os.mkdir(ScorePath)
+except:
+    print('Warning: output folder exists, will overwrite')
+ 
 
 '''setup for RTX use of mixed precision'''
 #Needs Tensorflow 2.4 and an RTX GPU
@@ -631,11 +636,15 @@ for i,im in enumerate(Imagelist):
         G2=1*(PredictedImage==4)
         OceanPixels=np.logical_or(PredictedImage==2, PredictedImage==1)
         RealOcean=NoOceanBorder(np.logical_or(OceanPixels, PredictedImage==3))
-        # O2label=label(O2, connectivity=1)
-        # [c, count]=np.unique(O2label, return_counts=True)
-        # c=c[1:]
-        # count=count[1:]
-        # RealOcean=1*(O2label==np.argmax(count)+1)
+        O2label=label(RealOcean, connectivity=1)
+        [c, count]=np.unique(O2label, return_counts=True)
+        c=c[1:]
+        count=count[1:]
+        RealOcean=np.zeros((O2label.shape[0], O2label.shape[1]), dtype='bool')
+        for o in range(len(count)):
+            if count[0]>10000: #1km square min size to be ocean
+                RealOcean=np.logical_or(RealOcean, (O2label==o+1))
+        RealOcean=1*RealOcean
         G2label=label(G2, connectivity=1)
         [c, count]=np.unique(G2label, return_counts=True)
         c=c[1:]
