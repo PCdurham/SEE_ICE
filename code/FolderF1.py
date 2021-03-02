@@ -11,7 +11,7 @@ import glob
 import numpy as np
 from sklearn import metrics
 
-folder='/media/patrice/DataDrive/SEE_ICE/Sto_VGG16_50_RGBNIR_fp16_joint_patch7/'
+folder='/media/patrice/DataDrive/SEE_ICE/Sto_VGG16_50_RGBNIR_joint999_fp16_patch7/'
 subsample=1000000 #use 0 for all points, else give number of points
 
 
@@ -73,5 +73,42 @@ print('\n')
 print('CNN-Supervised classification results for ' + folder)
 print(reportCSC)
 print('\n')
+
+#display run parameters
+if 'Hel' in folder:
+    print('Helheim')
+elif 'Jak' in folder:
+    print('Jakobshavn')
+elif 'Sto' in folder:
+    print('Store')
+
+
+if 'patch1' in folder:
+    print('Patch size is 1')
+elif 'patch3' in folder:
+    print('Patch size is 3')
+elif 'patch5' in folder:
+    print('Patch size is 5')
+elif 'patch7' in folder:
+    print('Patch size is 7')
+elif 'patch15' in folder:
+    print('Patch size is 15')
+
+if '_100_' in folder:
+    print('Tile size is 100')
+elif '_50_' in folder:
+    print('Tile size is 50')
+elif '_75_' in folder:
+    print('Tile size is 75')
+    
+if 'NIR' in folder:
+    print('NIR_RGB bands used')
+else:
+    print('RGB bands used')
+    
+if 'joint' in folder:
+    print('Joint CNN_training')
+else:
+    print('Single CNN_training')
 
 toc()
