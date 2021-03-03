@@ -41,8 +41,8 @@ def GetF1(report):
 
 def GetGlacierF1(report):
     lines = report.split('\n')
-    for line in lines[0]:
-        if '4' in line:
+    for line in lines[0:-1]:
+        if '4.0' in lines:
             dat = line.split(' ')
     
     return dat[14]
