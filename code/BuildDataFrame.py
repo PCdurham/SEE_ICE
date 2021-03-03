@@ -13,7 +13,7 @@ from sklearn import metrics
 import pandas as pd
 
 MasterFolder='C:\\Users\\Melanie Marochov\\Documents\\2_MScR\\1_Revised_Results\\Revised_Results\\' #save all run outputs here and nothing else.
-OutputName = 'C:\\Users\\Melanie Marochov\\Documents\\2_MScR\\1_Revised_Results\\Revised_Results_Data\\' #where data will be saved
+OutputName = 'C:\\Users\\Melanie Marochov\\Documents\\2_MScR\\1_Revised_Results\\Revised_Results_Data\\Results.csv' #where data will be saved
 
 subsample=1000000 #use 0 for all points, else give number of points
 
@@ -45,7 +45,7 @@ def GetGlacierF1(report):
         if '4.0' in line:
             dat = line.split(' ')
     
-    return dat[17]
+    return dat[25]
 
 
 def classification_report_csv(report, filename):
@@ -92,15 +92,15 @@ def GetValidation(folder):
         return 'Unseen'
     
 def GetPatch(folder):
-    if 'patch1' in folder:
+    if 'patch1\\' in folder:
         return 1
-    elif 'patch3' in folder:
+    elif 'patch3\\' in folder:
         return 3
-    elif 'patch5' in folder:
+    elif 'patch5\\' in folder:
         return 5
-    elif 'patch7' in folder:
+    elif 'patch7\\' in folder:
         return 7
-    elif 'patch15' in folder:
+    elif 'patch15\\' in folder:
         return 15
     
 def GetTileSize(folder):
