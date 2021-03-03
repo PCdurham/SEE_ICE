@@ -45,7 +45,8 @@ def GetGlacierF1(report):
         if '4.0' in line:
             dat = line.split(' ')
     
-    return dat[14]
+    return dat[25]
+
 
 def classification_report_csv(report, filename):
     report_data = []
