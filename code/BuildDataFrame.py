@@ -42,10 +42,10 @@ def GetF1(report):
 def GetGlacierF1(report):
     lines = report.split('\n')
     for line in lines[0:-1]:
-        if '4.0' in line:
+        if '4.0' in line[0:4]:
             dat = line.split(' ')
     
-    return dat[25]
+    return dat[17]
 
 
 def classification_report_csv(report, filename):
