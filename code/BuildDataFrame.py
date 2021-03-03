@@ -12,9 +12,10 @@ import numpy as np
 from sklearn import metrics
 import pandas as pd
 
+MasterFolder='C:\\Users\\Melanie Marochov\\Documents\\2_MScR\\1_Revised_Results\\Revised_Results\\' #save all run outputs here and nothing else.
+OutputName = 'C:\\Users\\Melanie Marochov\\Documents\\2_MScR\\1_Revised_Results\\Revised_Results_Data\\' #where data will be saved
 
 subsample=1000000 #use 0 for all points, else give number of points
-MasterFolder='' #save all run outputs here and nothing else.
 
 
 def tic():
@@ -40,11 +41,11 @@ def GetF1(report):
 
 def GetGlacierF1(report):
     lines = report.split('\n')
-    for line in lines[0:-1]:
-        if 'weighted' in line:
+    for line in lines[0]:
+        if '4' in line:
             dat = line.split(' ')
     
-    return dat[17]
+    return dat[14]
 
 def classification_report_csv(report, filename):
     report_data = []
