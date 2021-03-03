@@ -46,6 +46,33 @@ def GetGlacierF1(report):
     
     return dat[17]
 
+def classification_report_csv(report, filename):
+    report_data = []
+    report = report.replace('avg', "")
+    report = report.replace('accuracy', "Accuracy")
+    report = report.replace('macro', "Macro_avg")
+    report = report.replace('weighted', "Weighted_avg")
+    
+    lines = report.split("\n")
+    no_empty_lines = [line for line in lines if line.strip()]
+        
+    for line in no_empty_lines[1:]:
+        row = {}
+        row_data = line.split(' ')
+        row_data = list(filter(None, row_data))
+        if 'Accuracy' in line:
+            row_data.insert(1, 'NaN')
+            row_data.insert(2, 'NaN')
+            
+        row['Class'] = row_data[0]
+        row['Precision'] = (row_data[1])
+        row['Recall'] = (row_data[2])
+        row['F1_score'] = float(row_data[3])
+        row['Support'] = float(row_data[4])
+        report_data.append(row)
+    dataframe = pd.DataFrame.from_dict(report_data)
+    dataframe.to_csv(filename, index = False)
+
 def GetGlacier(folder):
     if 'Hel' in folder:
         return 'Helheim'
@@ -53,6 +80,14 @@ def GetGlacier(folder):
         return 'Jakobshavn'
     elif 'Sto' in folder:
         return 'Store'
+    
+def GetValidation(folder):
+    if 'Hel' in folder:
+        return 'Seen'
+    elif 'Jak' in folder:
+        return 'Unseen'
+    elif 'Sto' in folder:
+        return 'Unseen'
     
 def GetPatch(folder):
     if 'patch1' in folder:
@@ -88,8 +123,8 @@ def GetTraining(folder):
 
 tic()
 RunList=glob.glob(MasterFolder+'*/')
-DataArray=np.zeros((4*len(RunList),8))# columns: 1:F1 2:patch 3:tile size 4:bands 5:joint/single training 6:CSC phase 7:Glacier
-DataFrame=pd.DataFrame(DataArray, columns=['F1', 'F1_Type','Patch_Size','Tile_Size', 'Bands', 'CNN_Training','CSC_Phase', 'Glacier'])
+DataArray=np.zeros((4*len(RunList),9))# columns: 1:F1 2:patch 3:tile size 4:bands 5:joint/single training 6:CSC phase 7:Glacier
+DataFrame=pd.DataFrame(DataArray, columns=['F1', 'F1_Type','Patch_Size','Tile_Size', 'Bands', 'CNN_Training','CSC_Phase', 'Glacier', 'Validation'])
 DataPoint=0
 for j in range(len(RunList)):
     folder=RunList[j]
@@ -138,6 +173,7 @@ for j in range(len(RunList)):
     DataFrame['Bands'][DataPoint]=GetBands(folder)
     DataFrame['CNN_Training'][DataPoint]=GetTraining(folder)
     DataFrame['Glacier'][DataPoint]=GetGlacier(folder)
+    DataFrame['Validation'][DataPoint]=GetValidation(folder)
     DataFrame['CSC_Phase'][DataPoint]=1
     DataFrame['F1_Type'][DataPoint]='All'
     DataPoint+=1
@@ -147,6 +183,7 @@ for j in range(len(RunList)):
     DataFrame['Bands'][DataPoint]=GetBands(folder)
     DataFrame['CNN_Training'][DataPoint]=GetTraining(folder)
     DataFrame['Glacier'][DataPoint]=GetGlacier(folder)
+    DataFrame['Validation'][DataPoint]=GetValidation(folder)
     DataFrame['CSC_Phase'][DataPoint]=1
     DataFrame['F1_Type'][DataPoint]='Glacier'
     DataPoint+=1
@@ -156,6 +193,7 @@ for j in range(len(RunList)):
     DataFrame['Bands'][DataPoint]=GetBands(folder)
     DataFrame['CNN_Training'][DataPoint]=GetTraining(folder)
     DataFrame['Glacier'][DataPoint]=GetGlacier(folder)
+    DataFrame['Validation'][DataPoint]=GetValidation(folder)
     DataFrame['CSC_Phase'][DataPoint]=2
     DataFrame['F1_Type'][DataPoint]='All'
     DataPoint+=1
@@ -165,6 +203,7 @@ for j in range(len(RunList)):
     DataFrame['Bands'][DataPoint]=GetBands(folder)
     DataFrame['CNN_Training'][DataPoint]=GetTraining(folder)
     DataFrame['Glacier'][DataPoint]=GetGlacier(folder)
+    DataFrame['Validation'][DataPoint]=GetValidation(folder)
     DataFrame['CSC_Phase'][DataPoint]=2
     DataFrame['F1_Type'][DataPoint]='Glacier'
     DataPoint+=1
