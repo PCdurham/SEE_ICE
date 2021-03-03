@@ -82,10 +82,10 @@ import statistics
 
 """User data input. Fill in the info below before running"""
 
-ModelName = 'VGG16_50_Joint_RGBNIRfloat16_985acc'     #should be the model name from previous run of TrainCNN.py
+ModelName = 'VGG16_50_Joint_RGBNIRfloat16_9925acc'     #should be the model name from previous run of TrainCNN.py
 ModelPath = '/media/patrice/DataDrive/SEE_ICE/Models/'  #location of the model
-PredictPath = '/media/patrice/DataDrive/SEE_ICE/Validate/Unseen_Validation_Store/'#'Validate/Seen_Validation_Helheim/'#H13_09_19_3000px\\#Sc01_08_19_3000px\\'   #Location of the images
-ScorePath = '/media/patrice/DataDrive/SEE_ICE/Sto_VGG16_50_RGBNIR_fp16' #Results_Sc01_08_19_3000px\\Tiles100_results\\RGBNIR\\Patch_1\\'      #location of the output files and the model
+PredictPath = '/media/patrice/DataDrive/SEE_ICE/TestOutput/'#''Validate/Unseen_Validation_Store/'#'Validate/Seen_Validation_Helheim/'#H13_09_19_3000px\\#Sc01_08_19_3000px\\'   #Location of the images
+ScorePath = '/media/patrice/DataDrive/SEE_ICE/testdebug'#''Sto_VGG16_50_RGBNIR_joint999_fp16' #Results_Sc01_08_19_3000px\\Tiles100_results\\RGBNIR\\Patch_1\\'      #location of the output files and the model
 Experiment = 'VGGIR_50'    #ID with model, bands and tilesize, kernel size will be added further down
 
 
@@ -111,7 +111,7 @@ SmallestElement = 2 # Despeckle the classification to the smallest length in pix
 '''MODEL TRAINING PARAMETERS''' 
 LearningRate = 0.001
 Chatty = 1 # set the verbosity of the model training.  Use 1 at first, 0 when confident that model is well tuned
-Patience=7 #smaller cCNN require more patience, as much as 15, bigger can be 10. Use 50 for the MLP (kernel size 1)
+Patience=10 #smaller cCNN require more patience, as much as 15, bigger can be 10. Use 50 for the MLP (kernel size 1)
 minimumdelta=0.005
 ###############################################################################
 #adjust some names for the kernel size
@@ -642,7 +642,7 @@ for i,im in enumerate(Imagelist):
         count=count[1:]
         RealOcean=np.zeros((O2label.shape[0], O2label.shape[1]), dtype='bool')
         for o in range(len(count)):
-            if count[0]>10000: #1km square min size to be ocean
+            if count[o]>10000: #1km square min size to be ocean
                 RealOcean=np.logical_or(RealOcean, (O2label==o+1))
         RealOcean=1*RealOcean
         G2label=label(G2, connectivity=1)
@@ -916,30 +916,30 @@ for i,im in enumerate(Imagelist):
         outname=ScorePath+ImageRoot+'_classified'+'.png'
         io.imsave(outname,PredictedImage_class)
      #Memory cleanup   
-    PredictedClass=None
-    PredictedClassVECT=None
-    PredictedImage=None
-    PredictedImage_class=None
-    PredictedImage_display=None
-    PredictedImageVect=None
-    RealGlacier=None
-    RealOcean=None
-    RGBdisplayImage=None
-    Tiles=None
-    xpixel=None
-    ypixel=None
-    G2=None
-    G2label=None
-    GlacierPixels=None
-    image=None
-    CalvingFront=None
-    CalvingFront_display=None
-    cfront=None
-    cfrontlabel=None
-    ClassIm=None
-    Class=None
-    GlacierContour=None
-    init_ls=None
+    # PredictedClass=None
+    # PredictedClassVECT=None
+    # PredictedImage=None
+    # PredictedImage_class=None
+    # PredictedImage_display=None
+    # PredictedImageVect=None
+    # RealGlacier=None
+    # RealOcean=None
+    # RGBdisplayImage=None
+    # Tiles=None
+    # xpixel=None
+    # ypixel=None
+    # G2=None
+    # G2label=None
+    # GlacierPixels=None
+    # image=None
+    # CalvingFront=None
+    # CalvingFront_display=None
+    # cfront=None
+    # cfrontlabel=None
+    # ClassIm=None
+    # Class=None
+    # GlacierContour=None
+    # init_ls=None
         
 toc()   
             
