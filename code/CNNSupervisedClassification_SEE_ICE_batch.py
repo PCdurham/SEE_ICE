@@ -86,9 +86,9 @@ import time
 
 
 '''Input CSV file here'''
-Joblistfile='/media/patrice/DataDrive/SEE_ICE/JobList.csv'
+Joblistfile='/media/patrice/DataDrive/SEE_ICE/JobList_75fix.csv'
 ModelPath = '/media/patrice/DataDrive/SEE_ICE/Models/'  #location of the models, assumed the same for all jobs
-Jobstart=57 #0 if new, but other if starting in the middle of a job list
+Jobstart=0 #0 if new, but other if starting in the middle of a job list
 Joblist=pd.read_csv(Joblistfile)
 
 
@@ -180,7 +180,7 @@ def Sample_Raster_Tiles(im, CLS, size, Ndims, samples, NClasses):
     for C in range(NClasses+1):
         X, Y =np.where(CLS==C)
         actual_samples=samples
-        if len(X)>samples:
+        if len(X)<samples:
             actual_samples=len(X)
         sample_idx = np.int32(len(X)*np.random.uniform(size=(actual_samples,1)))
         TileTensor = np.zeros((actual_samples, size,size,Ndims))
@@ -555,6 +555,7 @@ for JobNumber in range(Jobstart, len(Joblist.index)):
         except:
             print('No truth label data for ' + os.path.basename(im))
             validate_output=False
+            ClassIm=np.zeros((Im3D.shape[0], Im3D.shape[1]), dtype='uint8')
         try:
             CalvingFront = io.imread(os.path.dirname(im)+'/EDGE_'+os.path.basename(im))
             print('Found validation data for calving front' + os.path.basename(im))
@@ -630,7 +631,7 @@ for JobNumber in range(Jobstart, len(Joblist.index)):
             for r in range(0,Im3D.shape[0]-Kernel_size):
                 
                 if r % 1000 == 0:
-                    print("%d: %s" % (r,'of 3000'))
+                    print("%d: %s" % (r,'of '+str(Im3D.shape[0])))
                 #print('row '+str(r)+' of '+str(Im3D.shape[0]))
                 Irow = Im3D[r:r+Kernel_size,:,:]
                 #tile the image
@@ -646,6 +647,8 @@ for JobNumber in range(Jobstart, len(Joblist.index)):
         PredictedImage[Kernel_size//2:Im3D.shape[0]-Kernel_size//2, Kernel_size//2:Im3D.shape[1]-Kernel_size//2]=PredictedSubImage
         Predicted = None
         PredictedSubImage = None
+        #close the TF session
+        session.close()
     # # =============================================================================
     #'''Detect Calving front from binary morphology operations and active contours'''
         print('Detecting Calving Front')

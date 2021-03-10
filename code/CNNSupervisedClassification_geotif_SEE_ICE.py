@@ -82,11 +82,11 @@ import statistics
 
 """User data input. Fill in the info below before running"""
 
-ModelName = 'VGG16_50_Joint_RGBNIRfloat16_9925acc'     #should be the model name from previous run of TrainCNN.py
+ModelName = 'VGG16_50_RGBNIRfloat16_99acc'     #should be the model name from previous run of TrainCNN.py
 ModelPath = '/media/patrice/DataDrive/SEE_ICE/Models/'  #location of the model
-PredictPath = '/media/patrice/DataDrive/SEE_ICE/TestOutput/'#''Validate/Unseen_Validation_Store/'#'Validate/Seen_Validation_Helheim/'#H13_09_19_3000px\\#Sc01_08_19_3000px\\'   #Location of the images
-ScorePath = '/media/patrice/DataDrive/SEE_ICE/testdebug'#''Sto_VGG16_50_RGBNIR_joint999_fp16' #Results_Sc01_08_19_3000px\\Tiles100_results\\RGBNIR\\Patch_1\\'      #location of the output files and the model
-Experiment = 'VGGIR_50'    #ID with model, bands and tilesize, kernel size will be added further down
+PredictPath = '/media/patrice/DataDrive/SEE_ICE/FullTileTest'#''Validate/Unseen_Validation_Store/'#'Validate/Seen_Validation_Helheim/'#H13_09_19_3000px\\#Sc01_08_19_3000px\\'   #Location of the images
+ScorePath = '/media/patrice/DataDrive/SEE_ICE/testdebug2'#''Sto_VGG16_50_RGBNIR_joint999_fp16' #Results_Sc01_08_19_3000px\\Tiles100_results\\RGBNIR\\Patch_1\\'      #location of the output files and the model
+Experiment = 'FullS2'    #ID with model, bands and tilesize, kernel size will be added further down
 
 
 '''BASIC PARAMETER CHOICES'''
@@ -97,7 +97,7 @@ Filters = 32
 Kernel_size = 7 #1,3,5,7,15 are valid
 size = 50#size of the prediction tiles
 CNNsamples= 500000 #number of subsamples PER CLASS to extract and train cCNN or MLP
-SizeThresh=30#number of image megapixels your ram can handle, 
+SizeThresh=3#number of image megapixels your ram can handle, 
 GACglacier=True #if true the geodetic contour will be used to refine the glacier class
 DisplayHoldout =  False #Display the results figure which is saved to disk.  
 OutDPI = 400 #Recommended 150 for inspection 1200 for papers.  
@@ -210,7 +210,7 @@ def Sample_Raster_Tiles(im, CLS, size, Ndims, samples, NClasses):
     for C in range(NClasses+1):
         X, Y =np.where(CLS==C)
         actual_samples=samples
-        if len(X)>samples:
+        if len(X)<samples:
             actual_samples=len(X)
         sample_idx = np.int32(len(X)*np.random.uniform(size=(actual_samples,1)))
         TileTensor = np.zeros((actual_samples, size,size,Ndims))
@@ -538,6 +538,7 @@ for i,im in enumerate(Imagelist):
     except:
         print('No truth label data for ' + os.path.basename(im))
         validate_output=False
+        ClassIm=np.zeros((Im3D.shape[0], Im3D.shape[1]), dtype='uint8')
     try:
         CalvingFront = io.imread(os.path.dirname(im)+'/EDGE_'+os.path.basename(im))
         print('Found validation data for calving front' + os.path.basename(im))
@@ -613,7 +614,7 @@ for i,im in enumerate(Imagelist):
         for r in range(0,Im3D.shape[0]-Kernel_size):
             
             if r % 1000 == 0:
-                print("%d: %s" % (r,'of 3000'))
+                print("%d: %s" % (r,'of '+str(Im3D.shape[0])))
             #print('row '+str(r)+' of '+str(Im3D.shape[0]))
             Irow = Im3D[r:r+Kernel_size,:,:]
             #tile the image
@@ -629,10 +630,13 @@ for i,im in enumerate(Imagelist):
     PredictedImage[Kernel_size//2:Im3D.shape[0]-Kernel_size//2, Kernel_size//2:Im3D.shape[1]-Kernel_size//2]=PredictedSubImage
     Predicted = None
     PredictedSubImage = None
+    #close the TF session
+    session.close()
 # # =============================================================================
 #'''Detect Calving front from binary morphology operations and active contours'''
     print('Detecting Calving Front')
     try:
+        import feather
         G2=1*(PredictedImage==4)
         OceanPixels=np.logical_or(PredictedImage==2, PredictedImage==1)
         RealOcean=NoOceanBorder(np.logical_or(OceanPixels, PredictedImage==3))
@@ -882,11 +886,11 @@ for i,im in enumerate(Imagelist):
     
         plt.subplot(2,2,3)
         plt.imshow(np.squeeze(PredictedClass), cmap=cmapCHM)
-        plt.xlabel('CNN Tile Classification. F1: ' + GetF1(reportCNN), fontweight='bold')
+        plt.xlabel('CNN Tile Classification ' , fontweight='bold')
         plt.subplot(2,2,4)
         plt.imshow(PredictedImage_display, cmap=cmapCHM)
         
-        plt.xlabel('CNN-Supervised Classification. F1: ' + GetF1(reportSSC), fontweight='bold' )
+        plt.xlabel('CNN-Supervised Classification. ', fontweight='bold' )
         
         FigName = ScorePath + 'CSC_'+  Experiment + '_'+ os.path.basename(im)[:-4] +'.png'
         plt.savefig(FigName, dpi=OutDPI, bbox_inches='tight')
