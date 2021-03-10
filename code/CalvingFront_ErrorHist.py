@@ -14,7 +14,7 @@ import os
 
 
 
-ScorePath1 = '/media/patrice/DataDrive/SEE_ICE/Sto_VGG16_50_RGBNIR_fp16_patch7/'
+ScorePath1 = '/media/patrice/DataDrive/SEE_ICE/FullData_Revision/Jak_VGG16_joint_50_RGBNIR_fp16_patch7/'
 
 DatList=glob.glob(ScorePath1+'*.npy')
 
@@ -33,12 +33,14 @@ for d in range(0, len(DatList)):
         #plt.figure()
         #sns.histplot(data=MasterData, binwidth=(10))
 
-MasterData=MasterData[1:]
+MasterData3=MasterData[1:]
 plt.figure()   
-n_bins=np.asarray(range(0,510,10))
+#n_bins=np.asarray(range(0,510,10))
 
-sns.histplot(data=np.clip(MasterData, n_bins[0], n_bins[-1]), bins=n_bins)
-plt.title('master')
+#sns.histplot(data=np.clip(MasterData, n_bins[0], n_bins[-1]), bins=n_bins)
+sns.histplot(MasterData, binwidth=10)
+plt.ylabel('Helheim')
+plt.xlabel('Error[m]')
 
 print('Modal error= '+str(int(statistics.mode(MasterData))))
 print('median error '+str(int(np.median(MasterData))))
