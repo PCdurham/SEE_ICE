@@ -122,3 +122,6 @@ report = metrics.classification_report(Observations, Predictions, digits = 3)
 print('Classification report for '+TuningDataName)
 print(report)
 model.save(OutPath+TuningDataName+'.h5')
+
+#close the TF session
+session.close()
