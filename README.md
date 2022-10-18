@@ -1,5 +1,5 @@
 # SEE_ICE
-Classification of Glacial Landscapes using CNN-Supervised Classification (CSC) ([Carbonneau et al. 2020](https://www.sciencedirect.com/science/article/pii/S0034425720304806)) :snowflake:
+Classification of Glacial Landscapes using CNN-Supervised Classification (CSC) ([Marochov et al. 2021](https://doi.org/10.5194/tc-15-5041-2021), [Carbonneau et al. 2020](https://www.sciencedirect.com/science/article/pii/S0034425720304806)) :snowflake:
 
 ## March 2021 Update
 Added:
@@ -74,10 +74,13 @@ _**Figure 1: CSC output showing a sample image of Helheim Glacier, eastern Green
 * Melanie Marochov
 
 ## Citation
+
+Marochov, M., Stokes, C.R., and Carbonneau, P.: Image classification of marine-terminating outlet glaciers in Greenland using deep learning methods, The Cryosphere, 15, 5041–5059, https://doi.org/10.5194/tc-15-5041-2021, 2021.
+
 CSC workflow: 
 Carbonneau, P. E., Dugdale, S. J., Breckon, T. P., Dietrich, J. T., Fonstad, M. A., Miyamoto, H. and Woodget, A. S.: Adopting deep learning methods for airborne RGB fluvial scene classification, Remote Sensing of Environment, 251, 112107, doi:https://doi.org/10.1016/j.rse.2020.112107, 2020.
 
-The work for CSC adaptation for glacial landscapes containing marine terminating outlet glaciers in Greenland has not yet been published, but a poster is available [here](https://presentations.copernicus.org/EGU2020/EGU2020-19996_presentation.pdf). 
+A poster presented on this work at EGU2020:Sharing Geoscience Online conference is available [here](https://presentations.copernicus.org/EGU2020/EGU2020-19996_presentation.pdf). 
 
 
 
